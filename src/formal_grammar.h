@@ -17,8 +17,8 @@ typedef enum fg_TokenType {
 
 typedef struct fg_Token {
     fg_TokenType type;
-    const char *name;
-    const char *string;
+    char *name;
+    char *string;
     lex_Range range;
 } fg_Token;
 
@@ -53,6 +53,34 @@ typedef struct fg_Grammar {
 
 } fg_Grammar;
 
-int fg_extractToken(fg_Token *token, struct ll_Iterator *itemIterator, char *currentItem);
+typedef enum fg_ErrorCode {
+    FG_OK,
+    FG_TOKEN_MISSING_END,
+    FG_TOKEN_MISSING_VALUE,
+    FG_TOKEN_INVALID_VALUE,
+    FG_TOKEN_UNKNOWN_VALUE_TYPE
+} fg_ErrorCode;
+
+/**
+ * Extracts a token from a list of items.
+ *
+ * A token is made by a name (starting with an uppercase letter),
+ * an equal sign, a value (string block or range) and a semicolon.
+ *
+ * @param token pointer to a structure that will receive values
+ * @param it iterator to a list that contains items
+ * @param tokenName name of the token
+ * @return FG_OK if not error occured
+ */
+int fg_extractToken(fg_Token *token, struct ll_Iterator *it, const char *tokenName);
+
+/**
+ * Frees allocated memory in a token.
+ *
+ * Pointers name and string will be set to NULL
+ *
+ * @param token pointer to a token structure
+ */
+void fg_freeToken(fg_Token *token);
 
 #endif //LEXER_FORMAL_GRAMMAR_H

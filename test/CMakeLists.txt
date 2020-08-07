@@ -1,5 +1,5 @@
 
-list(APPEND targets test_lexer test_linked_list test_string_utils)
+list(APPEND targets test_formal_grammar test_lexer test_linked_list test_string_utils)
 
 FOREACH(target ${targets})
     add_executable(${target} ${target}.c)
