@@ -22,6 +22,7 @@ typedef struct ll_Iterator {
     ll_LinkedListItem **pEntry;
 } ll_Iterator;
 
+typedef int DataComparator(const void*, const void*);
 typedef void DataDestructor(void*);
 typedef void DataHandler(void*, void*);
 
@@ -29,6 +30,7 @@ ll_LinkedList ll_createLinkedList();
 void ll_freeLinkedList(ll_LinkedList *list, DataDestructor *destructor);
 
 void ll_forEachItem(ll_LinkedList *list, DataHandler *itemCallback, void *params);
+bool ll_isEqual(ll_LinkedList *l1, ll_LinkedList *l2, DataComparator *comparator);
 
 void ll_pushBack(ll_LinkedList *list, void *data);
 void ll_pushBackBatch(ll_LinkedList *list, int itemsNumber, ...);

@@ -96,7 +96,7 @@ int str_splitItems(const char *source, size_t length, struct ll_LinkedList *item
     size_t currentPos = 0;
     char *separatorPtr = NULL;
 
-    while (currentPos < length && (separatorPtr = memchr(source + currentPos, separator, length)) != NULL) {
+    while (currentPos < length && (separatorPtr = memchr(source + currentPos, separator, length - currentPos)) != NULL) {
         size_t separatorPos = separatorPtr - source;
         size_t itemLength = separatorPos - currentPos;
 

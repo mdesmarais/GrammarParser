@@ -43,6 +43,29 @@ void ll_forEachItem(ll_LinkedList *list, DataHandler *itemCallback, void *params
     }
 }
 
+bool ll_isEqual(ll_LinkedList *l1, ll_LinkedList *l2, DataComparator *comparator) {
+    assert(l1);
+    assert(l2);
+
+    if (l1->size != l2->size) {
+        return false;
+    }
+
+    ll_Iterator it1 = ll_createIterator(l1);
+    ll_Iterator it2 = ll_createIterator(l2);
+
+    while (ll_iteratorHasNext(&it1)) {
+        const void *data1 = ll_iteratorNext(&it1);
+        const void *data2 = ll_iteratorNext(&it2);
+
+        if (comparator(data1, data2) != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void ll_pushBack(ll_LinkedList *list, void *data) {
     assert(list);
     assert(data);

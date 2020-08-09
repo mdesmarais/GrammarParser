@@ -18,7 +18,7 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
     assert(it);
     assert(tokenName);
 
-    expectCharFromIt(it, '=', -1);
+    expectCharFromIt(it, '=', FG_TOKEN_INVALID);
 
     if (!ll_iteratorHasNext(it)) {
         return FG_TOKEN_MISSING_VALUE;

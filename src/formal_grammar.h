@@ -55,6 +55,7 @@ typedef struct fg_Grammar {
 
 typedef enum fg_ErrorCode {
     FG_OK,
+    FG_TOKEN_INVALID,
     FG_TOKEN_MISSING_END,
     FG_TOKEN_MISSING_VALUE,
     FG_TOKEN_INVALID_VALUE,
