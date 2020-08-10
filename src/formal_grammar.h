@@ -19,7 +19,8 @@ typedef struct fg_Token {
     fg_TokenType type;
     char *name;
     char *string;
-    lex_Range range;
+    lex_Range *ranges;
+    int rangesNumber;
 } fg_Token;
 
 typedef struct fg_Rule {

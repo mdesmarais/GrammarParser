@@ -12,7 +12,7 @@
 static const char DIGITS[] = {"0123456789" };
 static const char LETTERS[] = {"abcdefghijklmnopqrstuvwxyz" };
 
-/*static int createRange(lex_Range *range, char x, char y, const char *seq) {
+static int createRange(lex_Range *range, char x, char y, const char *seq) {
     assert(range);
     assert(seq);
 
@@ -52,7 +52,7 @@ int lex_createLetterRange(lex_Range *range, char c1, char c2, bool uppercase) {
     return createRange(range, c1, c2, LETTERS);
 }
 
-bool lex_matchInRange(lex_Range *range, char c, bool isLetter) {
+/*bool lex_matchInRange(lex_Range *range, char c, bool isLetter) {
     assert(range);
 
     for (const char *curr = range->start; curr != range->end; ++curr) {
@@ -62,7 +62,7 @@ bool lex_matchInRange(lex_Range *range, char c, bool isLetter) {
     }
 
     return false;
-}
+} */
 
 int lex_extractRange(lex_Range *range, const char *input) {
     assert(range);
@@ -133,7 +133,7 @@ int lex_extractRanges(lex_Range **pRanges, const char *input, size_t length) {
     *pRanges = ranges;
 
     return i;
-}*/
+}
 
 int lex_extractGrammarItems(const char *source, size_t length, ll_LinkedList *itemList) {
     assert(source);

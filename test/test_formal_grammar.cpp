@@ -65,6 +65,41 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
         }
     }
 
+    GIVEN("A valid range token with 2 ranges") {
+        ll_pushBackBatch(&itemList, 4, "TOKEN", "=", "[a-z2-4]", ";");
+        ll_Iterator it = ll_createIterator(&itemList);
+
+        THEN("It should return OK") {
+            int res = fg_extractToken(&token, &it, (const char*) ll_iteratorNext(&it));
+            REQUIRE(FG_OK == res);
+
+            AND_THEN("ranges pointer in token structure should have been updated") {
+                REQUIRE(2 == token.rangesNumber);
+                REQUIRE(token.ranges);
+            }
+        }
+    }
+
+    GIVEN("A valid range token with 2 ranges and a quantifier") {
+        ll_pushBackBatch(&itemList, 5, "TOKEN", "=", "[a-z2-4]", "+", ";");
+        ll_Iterator it = ll_createIterator(&itemList);
+
+        THEN("It should return OK") {
+            int res = fg_extractToken(&token, &it, (const char*) ll_iteratorNext(&it));
+            REQUIRE(FG_OK == res);
+
+            AND_THEN("ranges pointer in token structure should have been updated") {
+                REQUIRE(2 == token.rangesNumber);
+                REQUIRE(token.ranges);
+            }
+
+            AND_THEN("each range should have its quantifier field updated") {
+                REQUIRE(LEX_PLUS_QUANTIFIER == token.ranges[0].quantifier);
+                REQUIRE(LEX_PLUS_QUANTIFIER == token.ranges[1].quantifier);
+            }
+        }
+    }
+
     fg_freeToken(&token);
     ll_freeLinkedList(&itemList, NULL);
 }
