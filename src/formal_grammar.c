@@ -1,11 +1,33 @@
 #include "formal_grammar.h"
 
-#include "linked_list.h"
 #include "log.h"
 
 #include <assert.h>
+#include <ctype.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+fg_Grammar fg_createGrammar() {
+    return (fg_Grammar){.ruleList = ll_createLinkedList(), .tokenList = ll_createLinkedList() };
+}
+
+static void tokenDestructor(void *token) {
+    fg_freeToken(token);
+    free(token);
+}
+
+static void ruleDestructor(void *rule) {
+    fg_freeRule(rule);
+    free(rule);
+}
+
+void fg_freeGrammar(fg_Grammar *g) {
+    if (g) {
+        ll_freeLinkedList(&g->ruleList, ruleDestructor);
+        ll_freeLinkedList(&g->tokenList, tokenDestructor);
+    }
+}
 
 #define expectCharFromIt(it, expected, ret) do { \
     if (!ll_iteratorHasNext((it)) || *((char*) ll_iteratorNext((it))) != (expected)) { \
@@ -95,4 +117,186 @@ void fg_freeToken(fg_Token *token) {
 
         token->rangesNumber = 0;
     }
+}
+
+int fg_extractRule(fg_Rule *rule, ll_Iterator *it, fg_Grammar *g, const char *ruleName) {
+    assert(rule);
+    assert(it);
+    assert(g);
+    assert(ruleName);
+
+    expectCharFromIt(it, '=', FG_RULE_INVALID);
+
+    bool hasEnd = false;
+    int extractedProductionRules = 0;
+
+    while (ll_iteratorHasNext(it)) {
+        char *currentItem = ll_iteratorNext(it);
+
+        if (*currentItem == ';') {
+            hasEnd = true;
+            break;
+        }
+
+        ll_LinkedList *productionRule = malloc(sizeof(*productionRule));
+        memset(productionRule, 0, sizeof(*productionRule));
+
+        char *lastItem = NULL;
+        int errCode = fg_extractProductionRule(productionRule, it, g, currentItem, &lastItem);
+
+        if (errCode != FG_OK) {
+            free(productionRule);
+            fg_freeRule(rule);
+            return errCode;
+        }
+
+        ll_pushBack(&rule->productionRuleList, productionRule);
+        ++extractedProductionRules;
+
+        if (lastItem && *lastItem == ';') {
+            hasEnd = true;
+            break;
+        }
+    }
+
+    if (extractedProductionRules == 0) {
+        return FG_RULE_EMPTY;
+    }
+
+    if (!hasEnd) {
+        fg_freeRule(rule);
+        return FG_RULE_MISSING_END;
+    }
+
+    rule->name = malloc(strlen(ruleName) + 1);
+    strcpy(rule->name, ruleName);
+
+    return FG_OK;
+}
+
+void fg_freeRule(fg_Rule *rule) {
+    if (rule) {
+        free(rule->name);
+        ll_freeLinkedList(&rule->productionRuleList, fg_freeProductionRule);
+
+        rule->name = NULL;
+    }
+}
+
+int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, fg_Grammar *grammar, char *currentItem, char **pLastItem) {
+    assert(prItemList);
+    assert(it);
+    assert(grammar);
+    assert(currentItem);
+    assert(pLastItem);
+
+    ll_Iterator tokenIt = ll_createIterator(&grammar->tokenList);
+    ll_Iterator ruleIt = ll_createIterator(&grammar->ruleList);
+
+    char *item = currentItem;
+    char *lastItem = NULL;
+
+    int extractedItems = 0;
+
+    do {
+        if (*item == '|' || *item == ';') {
+            lastItem = item;
+            break;
+        }
+
+        fg_PRItem *prItem = malloc(sizeof(*prItem));
+        memset(prItem, 0, sizeof(*prItem));
+
+        int errCode = fg_extractPrItem(prItem, item, &tokenIt, &ruleIt);
+
+        if (errCode != FG_OK) {
+            ll_freeLinkedList(prItemList, free);
+            free(prItem);
+            return errCode;
+        }
+
+        ll_pushBack(prItemList, prItem);
+        ++extractedItems;
+    } while (ll_iteratorHasNext(it) && (item = ll_iteratorNext(it)));
+
+    if (extractedItems == 0) {
+        return FG_PR_EMPTY;
+    }
+
+    *pLastItem = lastItem;
+
+    return FG_OK;
+}
+
+void fg_freeProductionRule(ll_LinkedList *pr) {
+    if (pr) {
+        ll_freeLinkedList(pr, free);
+        free(pr);
+    }
+}
+
+int fg_extractPrItem(fg_PRItem *prItem, const char *item, ll_Iterator *tokenIt, ll_Iterator *ruleIt) {
+    assert(prItem);
+    assert(item);
+    assert(tokenIt);
+    assert(ruleIt);
+
+    if (!isalpha(*item)) {
+        return FG_PRITEM_UNKNOWN_TYPE;
+    }
+
+    if (islower(*item)) {
+        // it should be a rule
+        fg_Rule *rule = fg_getRuleByName(item, ruleIt);
+
+        if (!rule) {
+            return FG_UNKNOWN_RULE;
+        }
+
+        prItem->type = FG_RULE_ITEM;
+        prItem->rule = rule;
+    }
+    else {
+        // it should be a token
+        fg_Token *token = fg_getTokenByName(item, tokenIt);
+
+        if (!token) {
+            return FG_UNKNOWN_TOKEN;
+        }
+
+        prItem->type = FG_TOKEN_ITEM;
+        prItem->token = token;
+    }
+
+    return FG_OK;
+}
+
+fg_Token *fg_getTokenByName(const char *name, struct ll_Iterator *tokenIt) {
+    assert(name);
+    assert(tokenIt);
+
+    while (ll_iteratorHasNext(tokenIt)) {
+        fg_Token *token = ll_iteratorNext(tokenIt);
+
+        if (strcmp(name, token->name) == 0) {
+            return token;
+        }
+    }
+
+    return NULL;
+}
+
+fg_Rule *fg_getRuleByName(const char *name, struct ll_Iterator *ruleIt) {
+    assert(name);
+    assert(ruleIt);
+
+    while (ll_iteratorHasNext(ruleIt)) {
+        fg_Rule *rule = ll_iteratorNext(ruleIt);
+
+        if (strcmp(name, rule->name) == 0) {
+            return rule;
+        }
+    }
+
+    return NULL;
 }

@@ -30,6 +30,7 @@ void ll_freeLinkedList(ll_LinkedList *list, DataDestructor *destructor) {
     }
 
     list->front = list->back = NULL;
+    list->size = 0;
 }
 
 void ll_forEachItem(ll_LinkedList *list, DataHandler *itemCallback, void *params) {

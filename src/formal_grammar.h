@@ -2,13 +2,12 @@
 #define LEXER_FORMAL_GRAMMAR_H
 
 #include "lexer.h"
+#include "linked_list.h"
 
 #include <string.h>
 
 struct fg_ProductionRule;
 struct fg_PRItem;
-
-struct ll_Iterator;
 
 typedef enum fg_TokenType {
     FG_RANGE_TOKEN,
@@ -25,33 +24,23 @@ typedef struct fg_Token {
 
 typedef struct fg_Rule {
     char *name;
-    size_t nameLength;
-    struct fg_ProductionRule *pr;
+    ll_LinkedList productionRuleList;
 } fg_Rule;
-
-typedef struct fg_ProductionRule {
-    struct fg_PRItem *prItem;
-    struct fg_ProductionRule *nextPr;
-} fg_ProductionRule;
 
 typedef enum fg_PrItemType {
     FG_RULE_ITEM,
     FG_TOKEN_ITEM
 } fg_PrItemType;
 
-typedef struct fg_PRTokenItem {
-
-} fg_PRTokenItem;
-
 typedef struct fg_PRItem {
     fg_PrItemType type;
     fg_Rule *rule;
-    fg_PRTokenItem token;
-    struct fg_PRItem *nextPrItem;
+    fg_Token *token;
 } fg_PRItem;
 
 typedef struct fg_Grammar {
-
+    ll_LinkedList tokenList;
+    ll_LinkedList ruleList;
 } fg_Grammar;
 
 typedef enum fg_ErrorCode {
@@ -60,8 +49,23 @@ typedef enum fg_ErrorCode {
     FG_TOKEN_MISSING_END,
     FG_TOKEN_MISSING_VALUE,
     FG_TOKEN_INVALID_VALUE,
-    FG_TOKEN_UNKNOWN_VALUE_TYPE
+    FG_TOKEN_UNKNOWN_VALUE_TYPE,
+
+    FG_RULE_EMPTY,
+    FG_RULE_INVALID,
+    FG_RULE_MISSING_END,
+    FG_RULE_MISSING_VALUE,
+
+    FG_UNKNOWN_TOKEN,
+    FG_UNKNOWN_RULE,
+
+    FG_PR_EMPTY,
+
+    FG_PRITEM_UNKNOWN_TYPE
 } fg_ErrorCode;
+
+fg_Grammar fg_createGrammar();
+void fg_freeGrammar(fg_Grammar *g);
 
 /**
  * Extracts a token from a list of items.
@@ -74,7 +78,7 @@ typedef enum fg_ErrorCode {
  * @param tokenName name of the token
  * @return FG_OK if not error occured
  */
-int fg_extractToken(fg_Token *token, struct ll_Iterator *it, const char *tokenName);
+int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName);
 
 /**
  * Frees allocated memory in a token.
@@ -84,5 +88,33 @@ int fg_extractToken(fg_Token *token, struct ll_Iterator *it, const char *tokenNa
  * @param token pointer to a token structure
  */
 void fg_freeToken(fg_Token *token);
+
+int fg_extractRule(fg_Rule *rule, ll_Iterator *it, fg_Grammar *g, const char *ruleName);
+
+void fg_freeRule(fg_Rule *rule);
+
+int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, fg_Grammar *grammar, char *currentItem, char **pLastItem);
+
+void fg_freeProductionRule(ll_LinkedList *pr);
+
+int fg_extractPrItem(fg_PRItem *prItem, const char *item, ll_Iterator *tokenIt, ll_Iterator *ruleIt);
+
+/**
+ * Find a token by its name.
+ *
+ * @param name name of the token, must be null terminated
+ * @param tokenIt iterator on a list of tokens
+ * @return a pointer to the matched token, or null if no token was found
+ */
+fg_Token *fg_getTokenByName(const char *name, ll_Iterator *tokenIt);
+
+/**
+ * Finds a rule by its name.
+ *
+ * @param name name of the rule, must be null terminated
+ * @param ruleIt iterator on a list of rules
+ * @return a pointer to the matched rule, or null if no rule was found
+ */
+fg_Rule *fg_getRuleByName(const char *name, ll_Iterator *ruleIt);
 
 #endif //LEXER_FORMAL_GRAMMAR_H
