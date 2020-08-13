@@ -107,6 +107,23 @@ void ll_pushBackBatch(ll_LinkedList *list, int itemsNumber, ...) {
     va_end(itemList);
 }
 
+void *ll_findItem(ll_LinkedList *list, void *query, DataComparator *comparator) {
+    assert(list);
+    assert(query);
+
+    ll_Iterator it = ll_createIterator(list);
+
+    while (ll_iteratorHasNext(&it)) {
+        void *value = ll_iteratorNext(&it);
+
+        if ((comparator && comparator(query, value) == 0) || query == value) {
+            return value;
+        }
+    }
+
+    return NULL;
+}
+
 ll_Iterator ll_createIterator(ll_LinkedList *list) {
     assert(list);
 

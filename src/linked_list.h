@@ -35,6 +35,8 @@ bool ll_isEqual(ll_LinkedList *l1, ll_LinkedList *l2, DataComparator *comparator
 void ll_pushBack(ll_LinkedList *list, void *data);
 void ll_pushBackBatch(ll_LinkedList *list, int itemsNumber, ...);
 
+void *ll_findItem(ll_LinkedList *list, void *query, DataComparator *comparator);
+
 ll_Iterator ll_createIterator(ll_LinkedList *list);
 bool ll_iteratorHasNext(ll_Iterator *it);
 void *ll_iteratorNext(ll_Iterator *it);

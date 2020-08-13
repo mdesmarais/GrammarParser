@@ -171,6 +171,38 @@ SCENARIO("Linked lists can be compared (equality)", "[linked_list]") {
     ll_freeLinkedList(&l2, NULL);
 }
 
+SCENARIO("Existence of an item in the list can be done with a comparator", "[linked_list]") {
+    ll_LinkedList itemList = ll_createLinkedList();
+
+    GIVEN("A list with several integers") {
+        int n1 = 78;
+        int n2 = 96;
+        int n3 = 2;
+
+        ll_pushBackBatch(&itemList, 3, &n1, &n2, &n3);
+
+        WHEN("Looking for an unknown value") {
+            int query = 1;
+            void *result = ll_findItem(&itemList, &query, intCmp);
+
+            THEN("It should return a null pointer") {
+                REQUIRE_FALSE(result);
+            }
+        }
+
+        WHEN("Looking for an existing value") {
+            int query = 96;
+            void *result = ll_findItem(&itemList, &query, intCmp);
+
+            THEN("It should return a pointer on n2") {
+                REQUIRE(&n2 == result);
+            }
+        }
+    }
+
+    ll_freeLinkedList(&itemList, NULL);
+}
+
 SCENARIO("Items in list can be retrieved individually with an iterator", "[linked_list]") {
     ll_LinkedList itemList = ll_createLinkedList();
 
