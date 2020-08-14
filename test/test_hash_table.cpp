@@ -32,9 +32,13 @@ SCENARIO("A hash table is created with an initial capacity", "[hash_table]") {
     ht_freeTable(&table, NULL);
 }
 
-static uint32_t constantHash(void *data) {
+static uint32_t constantHash(const void *data) {
     data;
     return 0;
+}
+
+static uint32_t intHash(const void *data) {
+    return *((int*) data);
 }
 
 static int intKeyComparator(const void *d1, const void *d2) {
@@ -90,6 +94,48 @@ SCENARIO("Pair insertion with hash collision", "[hash_table]") {
 
             AND_THEN("The first pair (p1)'s value should have been updated") {
                 REQUIRE(&v2 == p1.value);
+            }
+        }
+
+        ht_freeTable(&table, NULL);
+    }
+}
+
+SCENARIO("A value can be retrieved by its key", "[hash_table]") {
+    GIVEN("An hash table with 3 pairs") {
+        ht_Table table = {};
+        ht_createTable(&table, 10, intHash, intKeyComparator);
+
+        int k1 = 1;
+        int v1 = 84;
+        int k2 = 2;
+        int v2 = 64;
+        int k3 = 3;
+        int v3 = 78;
+
+        ht_KVPair p1, p2, p3;
+        ht_createPair(&p1, &k1, &v1);
+        ht_createPair(&p2, &k2, &v2);
+        ht_createPair(&p3, &k3, &v3);
+
+        ht_insertPair(&table, &p1);
+        ht_insertPair(&table, &p2);
+        ht_insertPair(&table, &p3);
+
+        WHEN("Looking for an unknown key") {
+            int k = 7;
+            void *result = ht_getValue(&table, &k);
+
+            THEN("It should return a null pointer") {
+                REQUIRE_FALSE(result);
+            }
+        }
+
+        WHEN("Looking for an existing key") {
+            void *result = ht_getValue(&table, &k2);
+
+            THEN("It should return a pointer on v2") {
+                REQUIRE(&v2 == result);
             }
         }
 

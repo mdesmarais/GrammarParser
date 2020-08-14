@@ -9,7 +9,7 @@ struct ll_LinkedList;
 
 typedef int ht_KeyComparator(const void*, const void*);
 typedef void ht_KVPairDestructor(void*);
-typedef uint32_t ht_HashFunction(void*);
+typedef uint32_t ht_HashFunction(const void*);
 
 typedef struct ht_KVPair {
     void *key;
@@ -85,11 +85,25 @@ void ht_insertPair(ht_Table *table, ht_KVPair *pair);
 /**
  * Computes a 256 bits hash value of the given string.
  *
- * It must be null terminated.
+ * Its based on the Jenkins hash function.
+ *
+ * The given string must be null terminated.
  *
  * @param data string to hash
  * @return computed hash value
  */
-uint32_t ht_hashString(void *data);
+uint32_t ht_hashString(const void *data);
+
+/**
+ * Retrieves a value by using its key.
+ *
+ * It the given key does not exist, then a null
+ * pointer will be returned.
+ *
+ * @param table a pointer to a hash table
+ * @param key
+ * @return pointer to the associated value or null
+ */
+void *ht_getValue(ht_Table *table, const void *key);
 
 #endif // HASH_TABLE_H

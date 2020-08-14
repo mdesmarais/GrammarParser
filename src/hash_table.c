@@ -68,18 +68,31 @@ static int pairComparator(const void *data1, const void *data2) {
     }
 }
 
+static ll_LinkedList *getBucket(ht_Table *table, const void *key) {
+    assert(table);
+    assert(key);
+
+    uint32_t hash = table->hashFunction(key);
+    size_t index = hash % table->capacity;
+
+    return table->buckets + index;
+}
+
+static ht_KVPair *getPairByKey(ht_Table *table, ll_LinkedList *bucket, const void *key) {
+    assert(table);
+    assert(bucket);
+    assert(key);
+
+    struct Pwet arg = { .table = table, .key = key };
+    return ll_findItem(bucket, &arg, pairComparator);
+}
+
 void ht_insertPair(ht_Table *table, ht_KVPair *pair) {
     assert(table);
     assert(pair);
 
-    uint32_t hash = table->hashFunction(pair->key);
-    size_t index = hash % table->capacity;
-
-    ll_LinkedList *bucket = table->buckets + index;
-
-    struct Pwet arg = { .table = table, .key = pair->key };
-
-    ht_KVPair *existingPair = ll_findItem(bucket, &arg, pairComparator);
+    ll_LinkedList *bucket = getBucket(table, pair->key);
+    ht_KVPair *existingPair = getPairByKey(table, bucket, pair->key);
 
     if (existingPair) {
         existingPair->value = pair->value;
@@ -90,6 +103,27 @@ void ht_insertPair(ht_Table *table, ht_KVPair *pair) {
     }
 }
 
-uint32_t ht_hashString(void *data) {
-    return 0;
+uint32_t ht_hashString(const void *data) {
+    uint32_t value = 0;
+
+    while (*((char*) data) != '\0') {
+        value += *((char*) data);
+        value += value << 10;
+        value ^= value >> 6;
+    }
+
+    value += value << 3;
+    value ^= value >> 11;
+    value += value << 15;
+
+    return value;
+}
+void *ht_getValue(ht_Table *table, const void *key) {
+    assert(table);
+    assert(key);
+
+    ll_LinkedList *bucket = getBucket(table, key);
+    ht_KVPair *pair = getPairByKey(table, bucket, key);
+
+    return (pair) ? pair->value : NULL;
 }
