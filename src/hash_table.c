@@ -39,6 +39,7 @@ void ht_freeTable(ht_Table *table) {
         }
 
         free(table->buckets);
+        table->buckets = NULL;
         table->capacity = table->size = 0;
     }
 }
@@ -111,6 +112,7 @@ uint32_t ht_hashString(const void *data) {
         value += *((char*) data);
         value += value << 10;
         value ^= value >> 6;
+        ++data;
     }
 
     value += value << 3;

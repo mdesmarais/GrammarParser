@@ -7,41 +7,42 @@ extern "C" {
 
 using Catch::Matchers::Equals;
 
-/*static char *createCString(std::string str) {
+static char *createCString(std::string str) {
     char *cstr = (char*) calloc(str.size() + 1, 1);
     return strcpy(cstr, str.c_str());
 }
 
-static fg_Token *createToken(std::string name) {
+static void createToken(ht_Table *tokensMap, std::string name) {
     fg_Token *t = (fg_Token*) malloc(sizeof(*t));
     memset(t, 0, sizeof(*t));
     t->name = createCString(name);
-    return t;
+
+    ht_KVPair *p1 = (ht_KVPair*) malloc(sizeof(*p1));
+    ht_createPair(p1, (void *) t->name, t);
+    ht_insertPair(tokensMap, p1);
 }
 
-static fg_Rule *createRule(std::string name) {
+static void createRule(ht_Table *rulesMap, std::string name) {
     fg_Rule *r = (fg_Rule*) malloc(sizeof(*r));
     memset(r, 0, sizeof(*r));
     r->name = createCString(name);
-    return r;
+
+    ht_KVPair *p1 = (ht_KVPair*) malloc(sizeof(*p1));
+    ht_createPair(p1, (void *) r->name, r);
+    ht_insertPair(rulesMap, p1);
 }
 
 static fg_Grammar createBasicGrammar() {
-    fg_Token *t1 = createToken("TOKEN1");
-    fg_Token *t2 = createToken("TOKEN2");
-    fg_Token *t3 = createToken("TOKEN3");
-
-    fg_Rule *r1 = createRule("rule1");
-    fg_Rule *r2 = createRule("rule2");
-    fg_Rule *r3 = createRule("rule3");
-
     fg_Grammar g = {};
     fg_createGrammar(&g);
-    g.ruleList = ll_createLinkedList();
-    g.tokenList = ll_createLinkedList();
 
-    ll_pushBackBatch(&g.tokenList, 3, t1, t2, t3);
-    ll_pushBackBatch(&g.ruleList, 3, r1, r2, r3);
+    createToken(&g.tokens, "TOKEN1");
+    createToken(&g.tokens, "TOKEN2");
+    createToken(&g.tokens, "TOKEN3");
+
+    createRule(&g.rules, "rule1");
+    createRule(&g.rules, "rule2");
+    createRule(&g.rules, "rule3");
 
     return g;
 }
@@ -143,117 +144,70 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     ll_freeLinkedList(&itemList, NULL);
 }
 
-SCENARIO("A token can be retrieved from a list by its name", "[formal_grammar]") {
-    GIVEN("Basic grammar with several tokens") {
-        fg_Grammar g = createBasicGrammar();
-
-        WHEN("Looking for a token that does not exist") {
-            ll_Iterator tokenIt = ll_createIterator(&g.tokenList);
-            fg_Token *token = fg_getTokenByName("UNKNOWN", &tokenIt);
-
-            THEN("It should return a null pointer") {
-                REQUIRE_FALSE(token);
-            }
-        }
-
-        WHEN("Looking for an existing token") {
-            ll_Iterator tokenIt = ll_createIterator(&g.tokenList);
-            fg_Token *token = fg_getTokenByName("TOKEN2", &tokenIt);
-
-            THEN("It should return a pointer to the second rule in the list") {
-                REQUIRE(token == g.tokenList.front->next->data);
-            }
-        }
-
-        fg_freeGrammar(&g);
-    }
-}
-
-SCENARIO("A rule can be retrieved from a list by its name", "[formal_grammar]") {
-    GIVEN("Basic grammar with several rules") {
-        fg_Grammar g = createBasicGrammar();
-
-        WHEN("Looking for a rule that does not exist") {
-            ll_Iterator ruleIt = ll_createIterator(&g.ruleList);
-            fg_Rule *rule = fg_getRuleByName("unknown", &ruleIt);
-
-            THEN("It should return a null pointer") {
-                REQUIRE_FALSE(rule);
-            }
-        }
-
-        WHEN("Looking for an existing rule") {
-            ll_Iterator ruleIt = ll_createIterator(&g.ruleList);
-            fg_Rule *rule = fg_getRuleByName("rule2", &ruleIt);
-
-            THEN("It should return a pointer to the second rule in the list") {
-
-                REQUIRE(rule == g.ruleList.front->next->data);
-            }
-        }
-
-        fg_freeGrammar(&g);
-    }
-}
-
 SCENARIO("A PRItem is either a reference to an existing token or a rule", "[formal_grammar]") {
     fg_Grammar g = createBasicGrammar();
     ll_LinkedList itemList = ll_createLinkedList();
-
-    ll_Iterator tokenIt = ll_createIterator(&g.tokenList);
-    ll_Iterator ruleIt = ll_createIterator(&g.ruleList);
 
     fg_PRItem item = {};
     memset(&item, 0, sizeof(item));
 
     GIVEN("An unknown token name") {
+        int res = fg_extractPrItem(&item, std::string("Token8").c_str(), &g);
         THEN("It should return an error") {
-            int res = fg_extractPrItem(&item, std::string("Token8").c_str(), &tokenIt, &ruleIt);
             REQUIRE(FG_UNKNOWN_TOKEN == res);
         }
     }
 
     GIVEN("An unknown rule name") {
+        int res = fg_extractPrItem(&item, std::string("rule13").c_str(), &g);
         THEN("It should return an error") {
-            int res = fg_extractPrItem(&item, std::string("rule13").c_str(), &tokenIt, &ruleIt);
             REQUIRE(FG_UNKNOWN_RULE == res);
         }
     }
 
     GIVEN("An unknown item type") {
+        int res = fg_extractPrItem(&item, std::string("@token").c_str(), &g);
+
         THEN("It should return an error") {
-            int res = fg_extractPrItem(&item, std::string("@token").c_str(), &tokenIt, &ruleIt);
             REQUIRE(FG_PRITEM_UNKNOWN_TYPE == res);
         }
     }
 
-    GIVEN("An existing token name") {
+    GIVEN("An existing rule name") {
+        std::string rule = "rule1";
+        int res = fg_extractPrItem(&item, rule.c_str(), &g);
+
         THEN("It should return OK") {
-            int res = fg_extractPrItem(&item, std::string("rule1").c_str(), &tokenIt, &ruleIt);
             REQUIRE(FG_OK == res);
+        }
 
-            AND_THEN("The item's type should be a rule") {
-                REQUIRE(FG_RULE_ITEM == item.type);
-            }
+        AND_THEN("The item's type should be a rule") {
+            REQUIRE(FG_RULE_ITEM == item.type);
+        }
 
-            AND_THEN("The field rule should point on the first grammar's rule") {
-                REQUIRE(g.ruleList.front->data == item.rule);
-            }
+        AND_THEN("The field rule should point on the first grammar's rule") {
+            fg_Rule *expected = (fg_Rule*) ht_getValue(&g.rules, rule.c_str());
+            REQUIRE(expected);
+            REQUIRE(expected == item.rule);
         }
     }
 
-    GIVEN("An existing rule name") {
+    GIVEN("An existing token name") {
+        std::string token = "TOKEN1";
+        int res = fg_extractPrItem(&item, token.c_str(), &g);
+
         THEN("It should return OK") {
-            int res = fg_extractPrItem(&item, std::string("TOKEN1").c_str(), &tokenIt, &ruleIt);
             REQUIRE(FG_OK == res);
+        }
 
-            AND_THEN("The item's type should be a token") {
-                REQUIRE(FG_TOKEN_ITEM == item.type);
-            }
+        AND_THEN("The item's type should be a token") {
+            REQUIRE(FG_TOKEN_ITEM == item.type);
+        }
 
-            AND_THEN("The field token should poin on the first grammar's token") {
-                REQUIRE(g.tokenList.front->data == item.token);
-            }
+        AND_THEN("The field token should poin on the first grammar's token") {
+            fg_Token *expected = (fg_Token*) ht_getValue(&g.tokens, token.c_str());
+            REQUIRE(expected);
+            REQUIRE(expected == item.token);
         }
     }
 
@@ -335,8 +289,8 @@ SCENARIO("A rule is made by one or more rules separated by a pipe and ends with 
     fg_Grammar g = createBasicGrammar();
     ll_LinkedList itemList = ll_createLinkedList();
 
-    fg_Rule rule = {};
-    memset(&rule, 0, sizeof(rule));
+    fg_Rule rule;
+    fg_createRule(&rule);
 
     GIVEN("An iterator on a rule without the end marker") {
         ll_pushBackBatch(&itemList, 3, "basic_rule", "=", "rule1");
@@ -369,7 +323,6 @@ SCENARIO("A rule is made by one or more rules separated by a pipe and ends with 
     }
 
     ll_freeLinkedList(&itemList, NULL);
-    fg_freeRule(&rule);
     fg_freeGrammar(&g);
+    fg_freeRule(&rule);
 }
-*/
