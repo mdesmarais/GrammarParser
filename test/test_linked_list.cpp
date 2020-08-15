@@ -203,6 +203,86 @@ SCENARIO("Existence of an item in the list can be done with a comparator", "[lin
     ll_freeLinkedList(&itemList, NULL);
 }
 
+SCENARIO("An item can be removed from the list", "[linked_list]") {
+    ll_LinkedList itemList = ll_createLinkedList();
+
+    GIVEN("A list with three items") {
+        int n1 = 1;
+        int n2 = 55;
+        int n3 = 787;
+
+        ll_pushBackBatch(&itemList, 3, &n1, &n2, &n3);
+
+        WHEN("Removing an unknown element") {
+            int n3 = 78;
+            bool result = ll_removeItem(&itemList, &n3, intCmp, NULL);
+
+            THEN("It should return false") {
+                REQUIRE_FALSE(result);
+            }
+
+            AND_THEN("The size of the list should not have changed") {
+                REQUIRE(3 == itemList.size);
+            }
+        }
+
+        WHEN("Deleting first element (n1)") {
+            bool result = ll_removeItem(&itemList, &n1, intCmp, NULL);
+
+            THEN("It should return true") {
+                REQUIRE(result);
+            }
+
+            AND_THEN("The size of the list should have decreased") {
+                REQUIRE(2 == itemList.size);
+            }
+
+            AND_THEN("The list's head should be n2") {
+                REQUIRE(&n2 == itemList.front->data);
+            }
+        }
+
+        WHEN("Deleting middle element (n2)") {
+            ll_LinkedListItem *front = itemList.front;
+            ll_LinkedListItem *back = itemList.back;
+
+            bool result = ll_removeItem(&itemList, &n2, intCmp, NULL);
+
+            THEN("It should return true") {
+                REQUIRE(result);
+            }
+
+            AND_THEN("The list's size should have decreased") {
+                REQUIRE(2 == itemList.size);
+            }
+
+            AND_THEN("Front en back pointers should not have changed") {
+                REQUIRE(front == itemList.front);
+                REQUIRE(back == itemList.back);
+            }
+        }
+
+        WHEN("Deleting last element") {
+            bool result = ll_removeItem(&itemList, &n3, intCmp, NULL);
+
+            THEN("It should return true") {
+                REQUIRE(result);
+            }
+
+            AND_THEN("The list's size should have decreased") {
+                REQUIRE(2 == itemList.size);
+            }
+
+            AND_THEN("The back pointer should be on item n2") {
+                REQUIRE(itemList.back);
+                REQUIRE(&n2 == itemList.back->data);
+            }
+        }
+    }
+
+    ll_freeLinkedList(&itemList, NULL);
+}
+
 SCENARIO("Items in list can be retrieved individually with an iterator", "[linked_list]") {
     ll_LinkedList itemList = ll_createLinkedList();
 

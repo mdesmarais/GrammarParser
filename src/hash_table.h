@@ -106,4 +106,16 @@ uint32_t ht_hashString(const void *data);
  */
 void *ht_getValue(ht_Table *table, const void *key);
 
+/**
+ * Removes a pair from the table.
+ *
+ * If no pair with the given key exists, then
+ * nothing will be done.
+ *
+ * @param table a pointer to a hash table
+ * @param key
+ * @param destructor pointer to a function to destruct a pair
+ */
+void ht_removeElement(ht_Table *table, const void *key, ht_KVPairDestructor *destructor);
+
 #endif // HASH_TABLE_H

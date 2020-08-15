@@ -107,7 +107,7 @@ void ll_pushBackBatch(ll_LinkedList *list, int itemsNumber, ...) {
     va_end(itemList);
 }
 
-void *ll_findItem(ll_LinkedList *list, void *query, DataComparator *comparator) {
+void *ll_findItem(ll_LinkedList *list, const void *query, DataComparator *comparator) {
     assert(list);
     assert(query);
 
@@ -116,12 +116,51 @@ void *ll_findItem(ll_LinkedList *list, void *query, DataComparator *comparator) 
     while (ll_iteratorHasNext(&it)) {
         void *value = ll_iteratorNext(&it);
 
-        if ((comparator && comparator(query, value) == 0) || query == value) {
+        if ((comparator && comparator(query, value) == 0) || (!comparator && query == value)) {
             return value;
         }
     }
 
     return NULL;
+}
+
+bool ll_removeItem(ll_LinkedList *list, const void *item, DataComparator *comparator, DataDestructor *destructor) {
+    assert(list);
+    assert(item);
+
+    ll_LinkedListItem *previousItem = NULL;
+    ll_LinkedListItem *currentItem = list->front;
+
+
+    while (currentItem) {
+        if ((comparator && comparator(item, currentItem->data) == 0) || (!comparator && item == currentItem->data)) {
+            if (previousItem) {
+                previousItem->next = currentItem->next;
+            }
+
+            if (currentItem == list->front) {
+                list->front = currentItem->next;
+            }
+
+            if (currentItem == list->back) {
+                list->back = previousItem;
+            }
+
+            if (destructor) {
+                destructor(currentItem->data);
+            }
+            free(currentItem);
+
+            --list->size;
+
+            return true;
+        }
+
+        previousItem = currentItem;
+        currentItem = currentItem->next;
+    }
+
+    return false;
 }
 
 ll_Iterator ll_createIterator(ll_LinkedList *list) {

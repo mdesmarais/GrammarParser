@@ -127,3 +127,15 @@ void *ht_getValue(ht_Table *table, const void *key) {
 
     return (pair) ? pair->value : NULL;
 }
+
+void ht_removeElement(ht_Table *table, const void *key, ht_KVPairDestructor *destructor) {
+    assert(table);
+    assert(key);
+
+    ll_LinkedList *bucket = getBucket(table, key);
+
+    struct Pwet arg = { .table = table, .key = key };
+    if (ll_removeItem(bucket, &arg, pairComparator, destructor)) {
+        --table->size;
+    }
+}

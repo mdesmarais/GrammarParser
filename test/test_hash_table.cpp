@@ -142,3 +142,26 @@ SCENARIO("A value can be retrieved by its key", "[hash_table]") {
         ht_freeTable(&table, NULL);
     }
 }
+
+SCENARIO("A pair can be removed by its key", "[hash_table]") {
+    GIVEN("An hash table with one pair") {
+        ht_Table table = {};
+        ht_createTable(&table, 10, intHash, intKeyComparator);
+
+        int k1 = 1;
+        int v1 = 45;
+
+        ht_KVPair p1;
+        ht_createPair(&p1, &k1, &v1);
+        ht_insertPair(&table, &p1);
+
+        WHEN("Removing k1") {
+            ht_removeElement(&table, &k1, NULL);
+            THEN("The table should be empty") {
+                REQUIRE(0 == table.size);
+            }
+        }
+
+        ht_freeTable(&table, NULL);
+    }
+}
