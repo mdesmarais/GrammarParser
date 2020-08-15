@@ -9,7 +9,7 @@ SCENARIO("A hash table is created with an initial capacity", "[hash_table]") {
     ht_Table table = {};
 
     GIVEN("A capacity of 5") {
-        bool res = ht_createTable(&table, 5, ht_hashString, NULL);
+        bool res = ht_createTable(&table, 5, ht_hashString, NULL, NULL);
 
         THEN("It should return true") {
             REQUIRE(res);
@@ -29,7 +29,7 @@ SCENARIO("A hash table is created with an initial capacity", "[hash_table]") {
         }
     }
 
-    ht_freeTable(&table, NULL);
+    ht_freeTable(&table);
 }
 
 static uint32_t constantHash(const void *data) {
@@ -48,7 +48,7 @@ static int intKeyComparator(const void *d1, const void *d2) {
 SCENARIO("Pair insertion with hash collision", "[hash_table]") {
     GIVEN("An hash table with one element and a constant hash function") {
         ht_Table table = {};
-        ht_createTable(&table, 10, constantHash, intKeyComparator);
+        ht_createTable(&table, 10, constantHash, intKeyComparator, NULL);
 
         int k1 = 1;
         int v1 = 38;
@@ -97,14 +97,14 @@ SCENARIO("Pair insertion with hash collision", "[hash_table]") {
             }
         }
 
-        ht_freeTable(&table, NULL);
+        ht_freeTable(&table);
     }
 }
 
 SCENARIO("A value can be retrieved by its key", "[hash_table]") {
     GIVEN("An hash table with 3 pairs") {
         ht_Table table = {};
-        ht_createTable(&table, 10, intHash, intKeyComparator);
+        ht_createTable(&table, 10, intHash, intKeyComparator, NULL);
 
         int k1 = 1;
         int v1 = 84;
@@ -139,14 +139,14 @@ SCENARIO("A value can be retrieved by its key", "[hash_table]") {
             }
         }
 
-        ht_freeTable(&table, NULL);
+        ht_freeTable(&table);
     }
 }
 
 SCENARIO("A pair can be removed by its key", "[hash_table]") {
     GIVEN("An hash table with one pair") {
         ht_Table table = {};
-        ht_createTable(&table, 10, intHash, intKeyComparator);
+        ht_createTable(&table, 10, intHash, intKeyComparator, NULL);
 
         int k1 = 1;
         int v1 = 45;
@@ -156,12 +156,12 @@ SCENARIO("A pair can be removed by its key", "[hash_table]") {
         ht_insertPair(&table, &p1);
 
         WHEN("Removing k1") {
-            ht_removeElement(&table, &k1, NULL);
+            ht_removeElement(&table, &k1);
             THEN("The table should be empty") {
                 REQUIRE(0 == table.size);
             }
         }
 
-        ht_freeTable(&table, NULL);
+        ht_freeTable(&table);
     }
 }

@@ -22,6 +22,7 @@ typedef struct ht_Table {
     size_t size;
     ht_HashFunction *hashFunction;
     ht_KeyComparator *keyComparator;
+    ht_KVPairDestructor *destructor;
 } ht_Table;
 
 /**
@@ -30,29 +31,31 @@ typedef struct ht_Table {
  * If the allocation of the table' records failed then false will
  * be returned.
  *
- * The key comparator is not mandatory : if it is null then
+ * The key comparator is not required : if it is null then
  * a pointer comparison will be used to check keys equality.
+ *
+ * The destructor is also not required : if it is null then
+ * we assume that there is not point of freeing memory for each pair.
+ * Th destructor should free allocated memory for the pair and eventually for
+ * its key and its valur.
  *
  * @param table pointer to a table structure
  * @param capacity initial capacity of the table
  * @param hashFunction pointer to a function that computes a 256 bits hash
  * @param keyComparator pointer to a function that compares pair's key
+ * @param destructor pointer to a destructor function
  * @return true if the initialization of the table succeed, otherwise false
  */
-bool ht_createTable(ht_Table *table, size_t capacity, ht_HashFunction *hashFunction, ht_KeyComparator *keyComparator);
+bool ht_createTable(ht_Table *table, size_t capacity, ht_HashFunction *hashFunction, ht_KeyComparator *keyComparator, ht_KVPairDestructor *destructor);
 
 /**
  * Frees allocated memory in the given hash table.
  *
  * Fields capacity and size will be set to 0.
- * The table pair destructor is used to free allocated memory
- * for each pairs. It can be NULL -> only used when pairs are not
- * dynamically allocated.
  *
  * @param table a pointer to a hash table structure
- * @param destructor pointer to a destructor function, can be NULL
  */
-void ht_freeTable(ht_Table *table, ht_KVPairDestructor *destructor);
+void ht_freeTable(ht_Table *table);
 
 /**
  * Initializes pair structure with a key and a value.
@@ -114,8 +117,7 @@ void *ht_getValue(ht_Table *table, const void *key);
  *
  * @param table a pointer to a hash table
  * @param key
- * @param destructor pointer to a function to destruct a pair
  */
-void ht_removeElement(ht_Table *table, const void *key, ht_KVPairDestructor *destructor);
+void ht_removeElement(ht_Table *table, const void *key);
 
 #endif // HASH_TABLE_H

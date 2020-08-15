@@ -22,9 +22,9 @@ typedef struct ll_Iterator {
     ll_LinkedListItem **pEntry;
 } ll_Iterator;
 
-typedef int DataComparator(const void*, const void*);
-typedef void DataDestructor(void*);
-typedef void DataHandler(void*, void*);
+typedef int ll_DataComparator(const void*, const void*);
+typedef void ll_DataDestructor(void*);
+typedef void ll_DataHandler(void*, void*);
 
 /**
  * Creates an empty linked list
@@ -42,7 +42,7 @@ ll_LinkedList ll_createLinkedList();
  * @param list pointer to a linked list
  * @param destructor pointer to a destructor function, can be NULL
  */
-void ll_freeLinkedList(ll_LinkedList *list, DataDestructor *destructor);
+void ll_freeLinkedList(ll_LinkedList *list, ll_DataDestructor *destructor);
 
 /**
  * Calls a function for each element in the given list.
@@ -54,7 +54,7 @@ void ll_freeLinkedList(ll_LinkedList *list, DataDestructor *destructor);
  * @param itemCallback pointer to a function that will receive each element
  * @param params additional params to the function, can be NULL
  */
-void ll_forEachItem(ll_LinkedList *list, DataHandler *itemCallback, void *params);
+void ll_forEachItem(ll_LinkedList *list, ll_DataHandler *itemCallback, void *params);
 
 /**
  * Checks if two lists are equal.
@@ -69,7 +69,7 @@ void ll_forEachItem(ll_LinkedList *list, DataHandler *itemCallback, void *params
  * @param comparator pointer to a comparator function
  * @return true if the two given lists are equal, otherwise false
  */
-bool ll_isEqual(ll_LinkedList *l1, ll_LinkedList *l2, DataComparator *comparator);
+bool ll_isEqual(ll_LinkedList *l1, ll_LinkedList *l2, ll_DataComparator *comparator);
 
 /**
  * Inserts a new element at the end of the list.
@@ -96,7 +96,7 @@ void ll_pushBackBatch(ll_LinkedList *list, int itemsNumber, ...);
  * @param comparator pointer to a comparator function
  * @return the value if it exists in the list, otherwise false
  */
-void *ll_findItem(ll_LinkedList *list, const void *query, DataComparator *comparator);
+void *ll_findItem(ll_LinkedList *list, const void *query, ll_DataComparator *comparator);
 
 /**
  * Removes an element from a given list.
@@ -110,7 +110,7 @@ void *ll_findItem(ll_LinkedList *list, const void *query, DataComparator *compar
  * @param destructor pointer to a destructor function
  * @return true if the element has been removed, otherwise false
  */
-bool ll_removeItem(ll_LinkedList *list, const void *item, DataComparator *comparator, DataDestructor *destructor);
+bool ll_removeItem(ll_LinkedList *list, const void *item, ll_DataComparator *comparator, ll_DataDestructor *destructor);
 
 /**
  * Creates an iterator set on the list's front.

@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-bool ht_createTable(ht_Table *table, size_t capacity, ht_HashFunction *hashFunction, ht_KeyComparator *keyComparator) {
+bool ht_createTable(ht_Table *table, size_t capacity, ht_HashFunction *hashFunction, ht_KeyComparator *keyComparator, ht_KVPairDestructor *destructor) {
     assert(table);
     assert(hashFunction);
 
@@ -20,17 +20,18 @@ bool ht_createTable(ht_Table *table, size_t capacity, ht_HashFunction *hashFunct
     table->size = 0;
     table->hashFunction = hashFunction;
     table->keyComparator = keyComparator;
+    table->destructor = destructor;
 
     return true;
 }
 
-void ht_freeTable(ht_Table *table, ht_KVPairDestructor *destructor) {
+void ht_freeTable(ht_Table *table) {
     if (table) {
         for (size_t i = 0;i < table->capacity;++i) {
             ll_LinkedList *buckets = table->buckets + i;
 
-            if (destructor) {
-                ll_freeLinkedList(buckets, destructor);
+            if (table->destructor) {
+                ll_freeLinkedList(buckets, table->destructor);
             }
             else {
                 ll_freeLinkedList(buckets, NULL);
@@ -53,7 +54,7 @@ void ht_createPair(ht_KVPair *pair, void *key, void *value) {
 
 struct Pwet {
     ht_Table *table;
-    char *key;
+    const char *key;
 };
 
 static int pairComparator(const void *data1, const void *data2) {
@@ -128,14 +129,14 @@ void *ht_getValue(ht_Table *table, const void *key) {
     return (pair) ? pair->value : NULL;
 }
 
-void ht_removeElement(ht_Table *table, const void *key, ht_KVPairDestructor *destructor) {
+void ht_removeElement(ht_Table *table, const void *key) {
     assert(table);
     assert(key);
 
     ll_LinkedList *bucket = getBucket(table, key);
 
     struct Pwet arg = { .table = table, .key = key };
-    if (ll_removeItem(bucket, &arg, pairComparator, destructor)) {
+    if (ll_removeItem(bucket, &arg, pairComparator, table->destructor)) {
         --table->size;
     }
 }

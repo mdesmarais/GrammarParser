@@ -7,7 +7,7 @@ extern "C" {
 
 using Catch::Matchers::Equals;
 
-static char *createCString(std::string str) {
+/*static char *createCString(std::string str) {
     char *cstr = (char*) calloc(str.size() + 1, 1);
     return strcpy(cstr, str.c_str());
 }
@@ -35,7 +35,8 @@ static fg_Grammar createBasicGrammar() {
     fg_Rule *r2 = createRule("rule2");
     fg_Rule *r3 = createRule("rule3");
 
-    fg_Grammar g = fg_createGrammar();
+    fg_Grammar g = {};
+    fg_createGrammar(&g);
     g.ruleList = ll_createLinkedList();
     g.tokenList = ll_createLinkedList();
 
@@ -371,3 +372,4 @@ SCENARIO("A rule is made by one or more rules separated by a pipe and ends with 
     fg_freeRule(&rule);
     fg_freeGrammar(&g);
 }
+*/

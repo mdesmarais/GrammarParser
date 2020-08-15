@@ -11,7 +11,7 @@ ll_LinkedList ll_createLinkedList() {
     return list;
 }
 
-void ll_freeLinkedList(ll_LinkedList *list, DataDestructor *destructor) {
+void ll_freeLinkedList(ll_LinkedList *list, ll_DataDestructor *destructor) {
     if (!list) {
         return;
     }
@@ -33,7 +33,7 @@ void ll_freeLinkedList(ll_LinkedList *list, DataDestructor *destructor) {
     list->size = 0;
 }
 
-void ll_forEachItem(ll_LinkedList *list, DataHandler *itemCallback, void *params) {
+void ll_forEachItem(ll_LinkedList *list, ll_DataHandler *itemCallback, void *params) {
     assert(list);
 
     ll_LinkedListItem *current = list->front;
@@ -44,7 +44,7 @@ void ll_forEachItem(ll_LinkedList *list, DataHandler *itemCallback, void *params
     }
 }
 
-bool ll_isEqual(ll_LinkedList *l1, ll_LinkedList *l2, DataComparator *comparator) {
+bool ll_isEqual(ll_LinkedList *l1, ll_LinkedList *l2, ll_DataComparator *comparator) {
     assert(l1);
     assert(l2);
 
@@ -107,7 +107,7 @@ void ll_pushBackBatch(ll_LinkedList *list, int itemsNumber, ...) {
     va_end(itemList);
 }
 
-void *ll_findItem(ll_LinkedList *list, const void *query, DataComparator *comparator) {
+void *ll_findItem(ll_LinkedList *list, const void *query, ll_DataComparator *comparator) {
     assert(list);
     assert(query);
 
@@ -124,7 +124,7 @@ void *ll_findItem(ll_LinkedList *list, const void *query, DataComparator *compar
     return NULL;
 }
 
-bool ll_removeItem(ll_LinkedList *list, const void *item, DataComparator *comparator, DataDestructor *destructor) {
+bool ll_removeItem(ll_LinkedList *list, const void *item, ll_DataComparator *comparator, ll_DataDestructor *destructor) {
     assert(list);
     assert(item);
 

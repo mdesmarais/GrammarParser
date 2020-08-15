@@ -8,24 +8,33 @@
 #include <stdlib.h>
 #include <string.h>
 
-fg_Grammar fg_createGrammar() {
-    return (fg_Grammar){.ruleList = ll_createLinkedList(), .tokenList = ll_createLinkedList() };
+static void tokenDestructor(void *data) {
+    // As the name in the pair is the same pointer as
+    // the one in the token, we don't need to free it.
+    // fg_freeToken will be in charge of it.
+    ht_KVPair *pair = data;
+    fg_freeToken(pair->value);
+    free(pair);
 }
 
-static void tokenDestructor(void *token) {
-    fg_freeToken(token);
-    free(token);
+static void ruleDestructor(void *data) {
+    // As the name in the pair is the same pointer as
+    // the one in the rule, we don't need to free it.
+    // fg_freeRule will be in charge of it.
+    ht_KVPair *pair = data;
+    fg_freeRule(pair->value);
+    free(pair);
 }
 
-static void ruleDestructor(void *rule) {
-    fg_freeRule(rule);
-    free(rule);
+void fg_createGrammar(fg_Grammar *g) {
+    ht_createTable(&g->tokens, 10, ht_hashString, (ht_KeyComparator*) strcmp, tokenDestructor);
+    ht_createTable(&g->rules, 10, ht_hashString, (ht_KeyComparator*) strcmp, ruleDestructor);
 }
 
 void fg_freeGrammar(fg_Grammar *g) {
     if (g) {
-        ll_freeLinkedList(&g->ruleList, ruleDestructor);
-        ll_freeLinkedList(&g->tokenList, tokenDestructor);
+        ht_freeTable(&g->tokens);
+        ht_freeTable(&g->tokens);
     }
 }
 
@@ -125,6 +134,13 @@ int fg_extractRule(fg_Rule *rule, ll_Iterator *it, fg_Grammar *g, const char *ru
     assert(g);
     assert(ruleName);
 
+    rule->name = malloc(strlen(ruleName) + 1);
+    strcpy(rule->name, ruleName);
+
+    ht_KVPair *pair = malloc(sizeof(*pair));
+    ht_createPair(pair, rule->name, rule);
+    ht_insertPair(&g->rules, pair);
+
     expectCharFromIt(it, '=', FG_RULE_INVALID);
 
     bool hasEnd = false;
@@ -168,16 +184,13 @@ int fg_extractRule(fg_Rule *rule, ll_Iterator *it, fg_Grammar *g, const char *ru
         return FG_RULE_MISSING_END;
     }
 
-    rule->name = malloc(strlen(ruleName) + 1);
-    strcpy(rule->name, ruleName);
-
     return FG_OK;
 }
 
 void fg_freeRule(fg_Rule *rule) {
     if (rule) {
         free(rule->name);
-        ll_freeLinkedList(&rule->productionRuleList, fg_freeProductionRule);
+        ll_freeLinkedList(&rule->productionRuleList, (ll_DataDestructor*) fg_freeProductionRule);
 
         rule->name = NULL;
     }
@@ -190,7 +203,7 @@ int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, fg_Gram
     assert(currentItem);
     assert(pLastItem);
 
-    ll_Iterator tokenIt = ll_createIterator(&grammar->tokenList);
+    /*ll_Iterator tokenIt = ll_createIterator(&grammar->tokenList);
     ll_Iterator ruleIt = ll_createIterator(&grammar->ruleList);
 
     char *item = currentItem;
@@ -223,7 +236,7 @@ int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, fg_Gram
         return FG_PR_EMPTY;
     }
 
-    *pLastItem = lastItem;
+    *pLastItem = lastItem;*/
 
     return FG_OK;
 }

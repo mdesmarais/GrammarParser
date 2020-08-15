@@ -1,6 +1,7 @@
 #ifndef LEXER_FORMAL_GRAMMAR_H
 #define LEXER_FORMAL_GRAMMAR_H
 
+#include "hash_table.h"
 #include "lexer.h"
 #include "linked_list.h"
 
@@ -39,8 +40,8 @@ typedef struct fg_PRItem {
 } fg_PRItem;
 
 typedef struct fg_Grammar {
-    ll_LinkedList tokenList;
-    ll_LinkedList ruleList;
+    ht_Table tokens;
+    ht_Table rules;
 } fg_Grammar;
 
 typedef enum fg_ErrorCode {
@@ -64,7 +65,7 @@ typedef enum fg_ErrorCode {
     FG_PRITEM_UNKNOWN_TYPE
 } fg_ErrorCode;
 
-fg_Grammar fg_createGrammar();
+void fg_createGrammar(fg_Grammar *g);
 void fg_freeGrammar(fg_Grammar *g);
 
 /**
