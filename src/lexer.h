@@ -24,8 +24,12 @@ typedef enum lex_RetCode {
     LEXER_INVALID_RANGE_PATTERN
 } lex_RetCode;
 
+#define LEXER_LOG_ERROR(code) log_error("%s -> %d", __FUNCTION__, (code))
+
 struct ll_LinkedList;
 struct ll_Iterator;
+
+struct fg_Grammar;
 
 int lex_createDigitRange(lex_Range *range, char n1, char n2);
 int lex_createLetterRange(lex_Range *range, char c1, char c2, bool uppercase);
@@ -47,7 +51,7 @@ int lex_extractRanges(lex_Range **pRanges, const char *input, size_t length);
  */
 int lex_extractGrammarItems(const char *source, size_t length, struct ll_LinkedList *itemList);
 
-int lex_parseGrammarItems(struct ll_LinkedList *itemList);
+int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList);
 
 /**
  * Reads a raw grammar from a stream

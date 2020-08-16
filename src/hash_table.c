@@ -3,7 +3,35 @@
 #include "linked_list.h"
 
 #include <assert.h>
+#include <stdarg.h>
 #include <stdlib.h>
+
+static void pairDestructor(void *data, void *args) {
+    ht_Table *table = args;
+    ht_KVPair *pair = data;
+
+    if (table->destructor) {
+        table->destructor(pair->key, pair->value);
+    }
+    free(pair);
+}
+
+struct ComparatorArgument {
+    const ht_Table *table;
+    const void *key;
+};
+
+static int pairComparator(const void *data1, const void *data2) {
+    const struct ComparatorArgument *arg = data1;
+    const ht_KVPair *p2 = data2;
+
+    if (arg->table->keyComparator) {
+        return arg->table->keyComparator(arg->key, p2->key);
+    }
+    else {
+        return arg->key == p2->key;
+    }
+}
 
 bool ht_createTable(ht_Table *table, size_t capacity, ht_HashFunction *hashFunction, ht_KeyComparator *keyComparator, ht_KVPairDestructor *destructor) {
     assert(table);
@@ -13,6 +41,10 @@ bool ht_createTable(ht_Table *table, size_t capacity, ht_HashFunction *hashFunct
 
     if (!buckets) {
         return false;
+    }
+
+    for (size_t i = 0;i < capacity;i++) {
+        ll_createLinkedList(buckets + i, pairDestructor);
     }
 
     table->buckets = buckets;
@@ -30,43 +62,12 @@ void ht_freeTable(ht_Table *table) {
         for (size_t i = 0;i < table->capacity;++i) {
             ll_LinkedList *buckets = table->buckets + i;
 
-            if (table->destructor) {
-                ll_freeLinkedList(buckets, table->destructor);
-            }
-            else {
-                ll_freeLinkedList(buckets, NULL);
-            }
+            ll_freeLinkedList(buckets, table);
         }
 
         free(table->buckets);
         table->buckets = NULL;
         table->capacity = table->size = 0;
-    }
-}
-
-void ht_createPair(ht_KVPair *pair, void *key, void *value) {
-    assert(pair);
-    assert(key);
-    assert(value);
-
-    pair->key = key;
-    pair->value = value;
-}
-
-struct Pwet {
-    ht_Table *table;
-    const char *key;
-};
-
-static int pairComparator(const void *data1, const void *data2) {
-    const struct Pwet *arg = data1;
-    const ht_KVPair *p2 = data2;
-
-    if (arg->table->keyComparator) {
-        return arg->table->keyComparator(arg->key, p2->key);
-    }
-    else {
-        return arg->key == p2->key;
     }
 }
 
@@ -85,23 +86,42 @@ static ht_KVPair *getPairByKey(ht_Table *table, ll_LinkedList *bucket, const voi
     assert(bucket);
     assert(key);
 
-    struct Pwet arg = { .table = table, .key = key };
+    struct ComparatorArgument arg = { .table = table, .key = key };
     return ll_findItem(bucket, &arg, pairComparator);
 }
 
-void ht_insertPair(ht_Table *table, ht_KVPair *pair) {
+void ht_insertElement(ht_Table *table, void *key, void *value) {
     assert(table);
-    assert(pair);
+    assert(key);
+    assert(value);
 
-    ll_LinkedList *bucket = getBucket(table, pair->key);
-    ht_KVPair *existingPair = getPairByKey(table, bucket, pair->key);
+    ll_LinkedList *bucket = getBucket(table, key);
+    ht_KVPair *existingPair = getPairByKey(table, bucket, key);
 
     if (existingPair) {
-        existingPair->value = pair->value;
+        existingPair->value = value;
     }
     else {
+        ht_KVPair *pair = malloc(sizeof(*pair));
+        pair->key = key;
+        pair->value = value;
         ll_pushBack(bucket, pair);
         ++table->size;
+    }
+}
+
+
+
+void ht_removeElement(ht_Table *table, const void *key) {
+    assert(table);
+    assert(key);
+
+    ll_LinkedList *bucket = getBucket(table, key);
+
+    struct ComparatorArgument arg = { .table = table, .key = key };
+
+    if (ll_removeItem(bucket, &arg, pairComparator, table)) {
+        --table->size;
     }
 }
 
@@ -121,6 +141,7 @@ uint32_t ht_hashString(const void *data) {
 
     return value;
 }
+
 void *ht_getValue(ht_Table *table, const void *key) {
     assert(table);
     assert(key);
@@ -129,16 +150,4 @@ void *ht_getValue(ht_Table *table, const void *key) {
     ht_KVPair *pair = getPairByKey(table, bucket, key);
 
     return (pair) ? pair->value : NULL;
-}
-
-void ht_removeElement(ht_Table *table, const void *key) {
-    assert(table);
-    assert(key);
-
-    ll_LinkedList *bucket = getBucket(table, key);
-
-    struct Pwet arg = { .table = table, .key = key };
-    if (ll_removeItem(bucket, &arg, pairComparator, table->destructor)) {
-        --table->size;
-    }
 }

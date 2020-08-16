@@ -53,18 +53,13 @@ SCENARIO("Pair insertion with hash collision", "[hash_table]") {
         int k1 = 1;
         int v1 = 38;
 
-        ht_KVPair p1 = {};
-        ht_createPair(&p1, &k1, &v1);
-
-        ht_insertPair(&table, &p1);
+        ht_insertElement(&table, &k1, &v1);
 
         WHEN("Adding another element with same hash value") {
             int k2 = 2;
             int v2 = 87;
 
-            ht_KVPair p2 = {};
-            ht_createPair(&p2, &k2, &v2);
-            ht_insertPair(&table, &p2);
+            ht_insertElement(&table, &k2, &v2);
 
             THEN("The size of the table should have been updated") {
                 REQUIRE(2 == table.size);
@@ -73,8 +68,6 @@ SCENARIO("Pair insertion with hash collision", "[hash_table]") {
             AND_THEN("The two pairs should be in the first bucket") {
                 ll_LinkedList *bucket = table.buckets;
                 REQUIRE(2 == bucket->size);
-                REQUIRE(ll_findItem(bucket, &p1, NULL));
-                REQUIRE(ll_findItem(bucket, &p2, NULL));
             }
         }
 
@@ -84,16 +77,16 @@ SCENARIO("Pair insertion with hash collision", "[hash_table]") {
 
             size_t previousSize = table.size;
 
-            ht_KVPair p2 = {};
-            ht_createPair(&p2, &k2, &v2);
-            ht_insertPair(&table, &p2);
+            ht_insertElement(&table, &k2, &v2);
 
             THEN("The size of the table should not have been updated") {
                 REQUIRE(previousSize == table.size);
             }
 
-            AND_THEN("The first pair (p1)'s value should have been updated") {
-                REQUIRE(&v2 == p1.value);
+            AND_THEN("The value should have been updated") {
+                int *result = (int*) ht_getValue(&table, &k2);
+                REQUIRE(result);
+                REQUIRE(&v2 == result);
             }
         }
 
@@ -113,14 +106,9 @@ SCENARIO("A value can be retrieved by its key", "[hash_table]") {
         int k3 = 3;
         int v3 = 78;
 
-        ht_KVPair p1, p2, p3;
-        ht_createPair(&p1, &k1, &v1);
-        ht_createPair(&p2, &k2, &v2);
-        ht_createPair(&p3, &k3, &v3);
-
-        ht_insertPair(&table, &p1);
-        ht_insertPair(&table, &p2);
-        ht_insertPair(&table, &p3);
+        ht_insertElement(&table, &k1, &v1);
+        ht_insertElement(&table, &k2, &v2);
+        ht_insertElement(&table, &k3, &v3);
 
         WHEN("Looking for an unknown key") {
             int k = 7;
@@ -151,9 +139,7 @@ SCENARIO("A pair can be removed by its key", "[hash_table]") {
         int k1 = 1;
         int v1 = 45;
 
-        ht_KVPair p1;
-        ht_createPair(&p1, &k1, &v1);
-        ht_insertPair(&table, &p1);
+        ht_insertElement(&table, &k1, &v1);
 
         WHEN("Removing k1") {
             ht_removeElement(&table, &k1);

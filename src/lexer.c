@@ -1,5 +1,6 @@
 #include "lexer.h"
 
+#include "formal_grammar.h"
 #include "linked_list.h"
 #include "log.h"
 #include "string_utils.h"
@@ -265,7 +266,8 @@ ssize_t lex_readGrammar(FILE *stream, char **pBuffer) {
     return pos;
 }
 
-int lex_parseGrammarItems(ll_LinkedList *itemList) {
+int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList) {
+    assert(g);
     assert(itemList);
 
     ll_Iterator it = ll_createIterator(itemList);
@@ -281,9 +283,34 @@ int lex_parseGrammarItems(ll_LinkedList *itemList) {
 
         if (isupper(*item)) {
             // it should be a token
+            fg_Token *token = malloc(sizeof(*token));
+            memset(token, 0, sizeof(*token));
+
+            int errCode = fg_extractToken(token, &it, item);
+
+            if (errCode != FG_OK) {
+                free(token);
+                return errCode;
+            }
+
+            ht_insertElement(&g->tokens, token->name, token);
         }
         else {
             // it should be a rule
+            fg_Rule *rule = malloc(sizeof(*rule));
+            fg_createRule(rule);
+
+            rule->name = calloc(strlen(item) + 1, 1);
+            strcpy(rule->name, item);
+
+            ht_insertElement(&g->rules, rule->name, rule);
+
+            int errCode = fg_extractRule(rule, &it, g, item);
+
+            if (errCode != FG_OK) {
+                ht_removeElement(&g->rules, rule->name);
+                return errCode;
+            }
         }
     }
 

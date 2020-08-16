@@ -183,7 +183,9 @@ SCENARIO("A range block ([...]) can contain several ranges", "[lexer]") {
 }
 
 SCENARIO("Items can be extracted from a raw grammar", "[lexer]") {
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, (ll_DataDestructor*) free);
+
     GIVEN("A string containing a rule with several production rules") {
         std::string input = "op=      NUMBER \n"
                             "\t| SUB NUMBER \n"
@@ -194,14 +196,16 @@ SCENARIO("Items can be extracted from a raw grammar", "[lexer]") {
         THEN("9 items should have been extracted") {
             REQUIRE(9 == extractedItems);
 
-            ll_LinkedList expected = ll_createLinkedList();
+            ll_LinkedList expected;
+            ll_createLinkedList(&expected, NULL);
+
             ll_pushBackBatch(&expected, 9, "op", "=", "NUMBER", "|", "SUB", "NUMBER", "|", "`hello world`", ";");
 
-            REQUIRE(ll_isEqual(&itemList, &expected, reinterpret_cast<int (*)(const void *, const void *)>(&strcmp)));
+            REQUIRE(ll_isEqual(&itemList, &expected, (ll_DataComparator*) strcmp));
 
             ll_freeLinkedList(&expected, NULL);
         }
     }
 
-    ll_freeLinkedList(&itemList, free);
+    ll_freeLinkedList(&itemList, NULL);
 }

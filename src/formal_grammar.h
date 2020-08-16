@@ -7,9 +7,6 @@
 
 #include <string.h>
 
-struct fg_ProductionRule;
-struct fg_PRItem;
-
 typedef enum fg_TokenType {
     FG_RANGE_TOKEN,
     FG_STRING_TOKEN
@@ -96,8 +93,6 @@ void fg_createRule(fg_Rule *rule);
 void fg_freeRule(fg_Rule *rule);
 
 int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, fg_Grammar *grammar, char *currentItem, char **pLastItem);
-
-void fg_freeProductionRule(ll_LinkedList *pr);
 
 int fg_extractPrItem(fg_PRItem *prItem, const char *item, fg_Grammar *g);
 

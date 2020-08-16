@@ -8,7 +8,7 @@
 struct ll_LinkedList;
 
 typedef int ht_KeyComparator(const void*, const void*);
-typedef void ht_KVPairDestructor(void*);
+typedef void ht_KVPairDestructor(void*, void *);
 typedef uint32_t ht_HashFunction(const void*);
 
 typedef struct ht_KVPair {
@@ -36,8 +36,7 @@ typedef struct ht_Table {
  *
  * The destructor is also not required : if it is null then
  * we assume that there is not point of freeing memory for each pair.
- * Th destructor should free allocated memory for the pair and eventually for
- * its key and its valur.
+ * The destructor should free allocated memory for the pair key / value.
  *
  * @param table pointer to a table structure
  * @param capacity initial capacity of the table
@@ -58,20 +57,7 @@ bool ht_createTable(ht_Table *table, size_t capacity, ht_HashFunction *hashFunct
 void ht_freeTable(ht_Table *table);
 
 /**
- * Initializes pair structure with a key and a value.
- *
- * Pair's key and value should be dynamically allocated : the use
- * of a pair destructor when calling ht_freeTable should be used to clean
- * memory.
- *
- * @param pair pointer to a pair structure
- * @param key the key
- * @param value the value
- */
-void ht_createPair(ht_KVPair *pair, void *key, void *value);
-
-/**
- * Inserts a pair into the table.
+ * Inserts a pair (key/value) into the table.
  *
  * This hash table uses separate chaining to manage collisions.
  * If a pair will same hash already exists, then the new one will be added
@@ -81,9 +67,21 @@ void ht_createPair(ht_KVPair *pair, void *key, void *value);
  * already exists, then its value will be modified with the new one.
  *
  * @param table a pointer to a hash table structure
- * @param pair a pointer to a pair structure
+ * @param key
+ * @param value
  */
-void ht_insertPair(ht_Table *table, ht_KVPair *pair);
+void ht_insertElement(ht_Table *table, void *key, void *value);
+
+/**
+ * Removes a pair from the table.
+ *
+ * If no pair with the given key exists, then
+ * nothing will be done.
+ *
+ * @param table a pointer to a hash table
+ * @param key
+ */
+void ht_removeElement(ht_Table *table, const void *key);
 
 /**
  * Computes a 256 bits hash value of the given string.
@@ -108,16 +106,5 @@ uint32_t ht_hashString(const void *data);
  * @return pointer to the associated value or null
  */
 void *ht_getValue(ht_Table *table, const void *key);
-
-/**
- * Removes a pair from the table.
- *
- * If no pair with the given key exists, then
- * nothing will be done.
- *
- * @param table a pointer to a hash table
- * @param key
- */
-void ht_removeElement(ht_Table *table, const void *key);
 
 #endif // HASH_TABLE_H

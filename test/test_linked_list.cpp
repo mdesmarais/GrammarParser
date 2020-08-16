@@ -6,7 +6,8 @@ extern "C" {
 
 SCENARIO("Items can be added at the end of the list individually", "[linked_list]") {
     GIVEN("An empty list") {
-        ll_LinkedList list = ll_createLinkedList();
+        ll_LinkedList list;
+        ll_createLinkedList(&list, NULL);
 
         WHEN("Adding two integers") {
             int n1 = 10;
@@ -45,7 +46,8 @@ SCENARIO("Items can be added at the end of the list individually", "[linked_list
 }
 
 SCENARIO("Several items can be added at the end of the list in a single func call", "[linked_list]") {
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
 
     GIVEN("A list with one item") {
         int n1 = 12;
@@ -77,7 +79,8 @@ SCENARIO("Several items can be added at the end of the list in a single func cal
 }
 
 SCENARIO("A function can be applied to each item in the list", "[linked_list]") {
-    ll_LinkedList list = ll_createLinkedList();
+    ll_LinkedList list;
+    ll_createLinkedList(&list, NULL);
     GIVEN("A list with 2 integers") {
         int n1 = 89;
         int n2 = 3;
@@ -91,7 +94,7 @@ SCENARIO("A function can be applied to each item in the list", "[linked_list]") 
         THEN("The lambda function should be called with correct values") {
             ll_forEachItem(&list, [](void *data, void *params) {
                 int value = *((int*) data);
-                int **pPos = static_cast<int **>(params);
+                int **pPos = (int**) params;
 
                 // Prevents overflow
                 // This function should only be called times
@@ -119,8 +122,9 @@ static int intCmp(const void *n1, const void *n2) {
 }
 
 SCENARIO("Linked lists can be compared (equality)", "[linked_list]") {
-    ll_LinkedList l1 = ll_createLinkedList();
-    ll_LinkedList l2 = ll_createLinkedList();
+    ll_LinkedList l1, l2;
+    ll_createLinkedList(&l1, NULL);
+    ll_createLinkedList(&l2, NULL);
 
     GIVEN("Two empty lists") {
         THEN("It should return true") {
@@ -172,7 +176,8 @@ SCENARIO("Linked lists can be compared (equality)", "[linked_list]") {
 }
 
 SCENARIO("Existence of an item in the list can be done with a comparator", "[linked_list]") {
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
 
     GIVEN("A list with several integers") {
         int n1 = 78;
@@ -204,7 +209,8 @@ SCENARIO("Existence of an item in the list can be done with a comparator", "[lin
 }
 
 SCENARIO("An item can be removed from the list", "[linked_list]") {
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
 
     GIVEN("A list with three items") {
         int n1 = 1;
@@ -284,7 +290,8 @@ SCENARIO("An item can be removed from the list", "[linked_list]") {
 }
 
 SCENARIO("Items in list can be retrieved individually with an iterator", "[linked_list]") {
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
 
     GIVEN("A list with 3 items") {
         int n1 = 1;
@@ -315,7 +322,8 @@ SCENARIO("Items in list can be retrieved individually with an iterator", "[linke
 }
 
 SCENARIO("Items can be inserted into a list with an iterator", "[linked_list]") {
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
 
     GIVEN("A list with 3 items") {
         int n1 = 1;
@@ -333,7 +341,8 @@ SCENARIO("Items can be inserted into a list with an iterator", "[linked_list]") 
             ll_iteratorInsert(&it, &n4);
 
             THEN("The inserted item should put between 1 and 55") {
-                ll_LinkedList expected = ll_createLinkedList();
+                ll_LinkedList expected;
+                ll_createLinkedList(&expected, NULL);
 
                 ll_pushBackBatch(&expected, 4, &n1, &n4, &n2, &n3);
                 REQUIRE(ll_isEqual(&expected, &itemList, intCmp));

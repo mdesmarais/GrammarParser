@@ -94,16 +94,19 @@ SCENARIO("String can be splitted with by a delimiter", "[string_utils]") {
         std::string input = ",hello,world,,,  ";
 
         THEN("It should have extracted 3 items") {
-            ll_LinkedList itemList = ll_createLinkedList();
+            ll_LinkedList itemList;
+            ll_createLinkedList(&itemList, (ll_DataDestructor*) free);
+
             REQUIRE(3 == str_splitItems(input.c_str(), input.size(), &itemList, ','));
 
-            ll_LinkedList expected = ll_createLinkedList();
+            ll_LinkedList expected;
+            ll_createLinkedList(&expected, NULL);
             ll_pushBackBatch(&expected, 3, "hello", "world", "  ");
 
             REQUIRE(ll_isEqual(&expected, &itemList, reinterpret_cast<int (*)(const void *, const void *)>(strcmp)));
 
             ll_freeLinkedList(&expected, NULL);
-            ll_freeLinkedList(&itemList, free);
+            ll_freeLinkedList(&itemList, NULL);
         }
     }
 }

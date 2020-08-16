@@ -1,17 +1,18 @@
 #include "linked_list.h"
 
+#include "log.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
-ll_LinkedList ll_createLinkedList() {
-    ll_LinkedList list;
-    memset(&list, 0, sizeof(list));
-
-    return list;
+void ll_createLinkedList(ll_LinkedList *list, ll_DataDestructor *destructor) {
+    list->front = list->back = NULL;
+    list->size = 0;
+    list->destructor = destructor;
 }
 
-void ll_freeLinkedList(ll_LinkedList *list, ll_DataDestructor *destructor) {
+void ll_freeLinkedList(ll_LinkedList *list, void *args) {
     if (!list) {
         return;
     }
@@ -21,8 +22,8 @@ void ll_freeLinkedList(ll_LinkedList *list, ll_DataDestructor *destructor) {
     while (current) {
         ll_LinkedListItem *next = current->next;
 
-        if (destructor) {
-            destructor(current->data);
+        if (list->destructor) {
+            list->destructor(current->data, args);
         }
 
         free(current);
@@ -124,7 +125,7 @@ void *ll_findItem(ll_LinkedList *list, const void *query, ll_DataComparator *com
     return NULL;
 }
 
-bool ll_removeItem(ll_LinkedList *list, const void *item, ll_DataComparator *comparator, ll_DataDestructor *destructor) {
+bool ll_removeItem(ll_LinkedList *list, const void *item, ll_DataComparator *comparator, void *args) {
     assert(list);
     assert(item);
 
@@ -146,8 +147,8 @@ bool ll_removeItem(ll_LinkedList *list, const void *item, ll_DataComparator *com
                 list->back = previousItem;
             }
 
-            if (destructor) {
-                destructor(currentItem->data);
+            if (list->destructor) {
+                list->destructor(currentItem->data, args);
             }
             free(currentItem);
 

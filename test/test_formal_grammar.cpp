@@ -17,9 +17,7 @@ static void createToken(ht_Table *tokensMap, std::string name) {
     memset(t, 0, sizeof(*t));
     t->name = createCString(name);
 
-    ht_KVPair *p1 = (ht_KVPair*) malloc(sizeof(*p1));
-    ht_createPair(p1, (void *) t->name, t);
-    ht_insertPair(tokensMap, p1);
+    ht_insertElement(tokensMap, t->name, t);
 }
 
 static void createRule(ht_Table *rulesMap, std::string name) {
@@ -27,9 +25,7 @@ static void createRule(ht_Table *rulesMap, std::string name) {
     memset(r, 0, sizeof(*r));
     r->name = createCString(name);
 
-    ht_KVPair *p1 = (ht_KVPair*) malloc(sizeof(*p1));
-    ht_createPair(p1, (void *) r->name, r);
-    ht_insertPair(rulesMap, p1);
+    ht_insertElement(rulesMap, r->name, r);
 }
 
 static fg_Grammar createBasicGrammar() {
@@ -48,7 +44,8 @@ static fg_Grammar createBasicGrammar() {
 }
 
 SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
     fg_Token token = {};
 
     GIVEN("A token without a value") {
@@ -146,7 +143,8 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
 
 SCENARIO("A PRItem is either a reference to an existing token or a rule", "[formal_grammar]") {
     fg_Grammar g = createBasicGrammar();
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
 
     fg_PRItem item = {};
     memset(&item, 0, sizeof(item));
@@ -217,11 +215,11 @@ SCENARIO("A PRItem is either a reference to an existing token or a rule", "[form
 
 SCENARIO("A production rule is made by one or more items (token or rule)", "[formal_grammar]") {
     fg_Grammar g = createBasicGrammar();
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
 
-    ll_LinkedList *productionRule = (ll_LinkedList*) malloc(sizeof(*productionRule));
-    productionRule->front = productionRule->back = NULL;
-    productionRule->size = 0;
+    ll_LinkedList productionRule;
+    ll_createLinkedList(&productionRule, (ll_DataDestructor*) free);
 
     GIVEN("An iterator on a valid production rule items") {
         ll_pushBackBatch(&itemList, 3, "rule1", "TOKEN1", "|");
@@ -229,12 +227,12 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
 
         THEN("It should return OK") {
             char *lastItem = NULL;
-            int res = fg_extractProductionRule(productionRule, &it, &g, (char*) ll_iteratorNext(&it), &lastItem);
+            int res = fg_extractProductionRule(&productionRule, &it, &g, (char*) ll_iteratorNext(&it), &lastItem);
 
             REQUIRE(FG_OK == res);
 
             AND_THEN("The production rule should contain 2 items") {
-                REQUIRE(2 == productionRule->size);
+                REQUIRE(2 == productionRule.size);
             }
 
             AND_THEN("The last item should be a pipe") {
@@ -250,12 +248,12 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
 
         THEN("It should return an error") {
             char *lastItem = NULL;
-            int res = fg_extractProductionRule(productionRule, &it, &g, (char*) ll_iteratorNext(&it), &lastItem);
+            int res = fg_extractProductionRule(&productionRule, &it, &g, (char*) ll_iteratorNext(&it), &lastItem);
 
             REQUIRE(FG_PRITEM_UNKNOWN_TYPE == res);
 
             AND_THEN("The production rule should not have any items") {
-                REQUIRE(0 == productionRule->size);
+                REQUIRE(0 == productionRule.size);
             }
 
             AND_THEN("The last character pointer should remain NULL") {
@@ -270,24 +268,25 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
 
         THEN("It should return an error") {
             char *lastItem = NULL;
-            int res = fg_extractProductionRule(productionRule, &it, &g, (char*) ll_iteratorNext(&it), &lastItem);
+            int res = fg_extractProductionRule(&productionRule, &it, &g, (char*) ll_iteratorNext(&it), &lastItem);
 
             REQUIRE(FG_PR_EMPTY == res);
 
             AND_THEN("The production rule should not have any items") {
-                REQUIRE(0 == productionRule->size);
+                REQUIRE(0 == productionRule.size);
             }
         }
     }
 
     ll_freeLinkedList(&itemList, NULL);
-    fg_freeProductionRule(productionRule);
+    ll_freeLinkedList(&productionRule, NULL);
     fg_freeGrammar(&g);
 }
 
 SCENARIO("A rule is made by one or more rules separated by a pipe and ends with a semicolon", "[formal_grammar]") {
     fg_Grammar g = createBasicGrammar();
-    ll_LinkedList itemList = ll_createLinkedList();
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
 
     fg_Rule rule;
     fg_createRule(&rule);
