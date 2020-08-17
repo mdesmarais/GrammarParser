@@ -151,3 +151,49 @@ void *ht_getValue(ht_Table *table, const void *key) {
 
     return (pair) ? pair->value : NULL;
 }
+
+void ht_createIterator(ht_Iterator *it, ht_Table *table) {
+    assert(it);
+    assert(table);
+    assert(table->capacity > 0);
+
+    // Looking for the first non empty bucket
+    size_t index = 0;
+    while (index < table->capacity && table->buckets[index].size == 0) {
+        ++index;
+    }
+
+    it->table = table;
+    it->bucketIndex = index;
+
+    if (index < table->capacity) {
+        ll_initIterator(&it->internalIt, table->buckets + index);
+    }
+}
+
+bool ht_iteratorHasNext(ht_Iterator *it) {
+    assert(it);
+
+    return ll_iteratorHasNext(&it->internalIt)
+        || (it->bucketIndex < it->table->capacity && it->table->buckets[it->bucketIndex + 1].size > 0);
+}
+
+ht_KVPair *ht_iteratorNext(ht_Iterator *it) {
+    assert(it);
+    assert(ht_iteratorHasNext(it));
+
+    ht_KVPair *current = ll_iteratorNext(&it->internalIt);
+
+    if (!ll_iteratorHasNext(&it->internalIt)) {
+        ++it->bucketIndex;
+        while (it->bucketIndex < it->table->capacity && it->table->buckets[it->bucketIndex].size == 0) {
+            ++it->bucketIndex;
+        }
+
+        if (it->bucketIndex < it->table->capacity) {
+            ll_initIterator(&it->internalIt, it->table->buckets + it->bucketIndex);
+        }
+    }
+
+    return current;
+}

@@ -123,6 +123,8 @@ bool ll_removeItem(ll_LinkedList *list, const void *item, ll_DataComparator *com
  */
 ll_Iterator ll_createIterator(ll_LinkedList *list);
 
+void ll_initIterator(ll_Iterator *it, ll_LinkedList *list);
+
 /**
  * Checks if one or more elements are available on the list at
  * the iterator's position.

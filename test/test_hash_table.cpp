@@ -151,3 +151,52 @@ SCENARIO("A pair can be removed by its key", "[hash_table]") {
         ht_freeTable(&table);
     }
 }
+
+SCENARIO("Items in table can be retrieved individually with an iterator", "[hash_table]") {
+    ht_Table table;
+    ht_createTable(&table, 6, intHash, intKeyComparator, NULL);
+
+    GIVEN("A map with 3 pairs") {
+        int n1 = 1;
+        int v1 = 78;
+
+        int n2 = 2;
+        int v2 = 98;
+
+        int n3 = 4;
+        int v3 = 74;
+
+        ht_insertElement(&table, &n1, &v1);
+        ht_insertElement(&table, &n2, &v2);
+        ht_insertElement(&table, &n3, &v3);
+
+        // We are using a simple hash function that allows us to control
+        // which bucket will be used to store a pair.
+
+        // With those values, we have : bucket0=empty, bucket1=pair1,
+        // bucket2=pair2, bucket3=empty, bucket4=pair3, bucket5=empty
+
+        ht_Iterator it;
+        ht_createIterator(&it, &table);
+
+        THEN("Iterator next function should be callable 3 times") {
+            ht_KVPair *p1 = ht_iteratorNext(&it);
+            REQUIRE(&n1 == (int*) p1->key);
+            REQUIRE(&v1 == (int*) p1->value);
+
+            ht_KVPair *p2 = ht_iteratorNext(&it);
+            REQUIRE(&n2 == (int*) p2->key);
+            REQUIRE(&v2 == (int*) p2->value);
+
+            ht_KVPair *p3 = ht_iteratorNext(&it);
+            REQUIRE(&n3 == (int*) p3->key);
+            REQUIRE(&v3 == (int*) p3->value);
+
+            AND_THEN("Iterator should be at the end") {
+                REQUIRE_FALSE(ht_iteratorHasNext(&it));
+            }
+        }
+    }
+
+    ht_freeTable(&table);
+}

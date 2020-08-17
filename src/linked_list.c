@@ -170,6 +170,15 @@ ll_Iterator ll_createIterator(ll_LinkedList *list) {
     return (ll_Iterator){ .list = list, .current = list->front, .pEntry = &list->front };
 }
 
+void ll_initIterator(ll_Iterator *it, ll_LinkedList *list) {
+    assert(it);
+    assert(list);
+
+    it->list = list;
+    it->current = list->front;
+    it->pEntry = &list->front;
+}
+
 bool ll_iteratorHasNext(ll_Iterator *it) {
     assert(it);
 
