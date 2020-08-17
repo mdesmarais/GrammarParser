@@ -21,6 +21,6 @@ void set_insertValue(set_HashSet *set, void *value) {
     ht_insertElement(set, value, &SENTINEL);
 }
 
-bool set_contains(set_HashSet *set, void *value) {
+bool set_contains(set_HashSet *set, const void *value) {
     return ht_getValue(set, value) != NULL;
 }

@@ -3,6 +3,7 @@
 extern "C" {
 #include <formal_grammar.h>
 #include <linked_list.h>
+#include <set.h>
 }
 
 using Catch::Matchers::Equals;
@@ -48,12 +49,15 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     ll_createLinkedList(&itemList, NULL);
     fg_Token token = {};
 
+    set_HashSet symbols;
+    set_createSet(&symbols, 10, (ht_KeyComparator*) strcmp, (set_ElementDestructor*) free);
+
     GIVEN("A token without a value") {
         ll_pushBackBatch(&itemList, 3, "TOKEN", "=", ";");
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractToken(&token, &it, (const char*) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, &symbols, (const char*) ll_iteratorNext(&it));
             REQUIRE(FG_TOKEN_MISSING_VALUE == res);
         }
     }
@@ -63,7 +67,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractToken(&token, &it, (const char*) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, &symbols, (const char*) ll_iteratorNext(&it));
             REQUIRE(FG_TOKEN_MISSING_END == res);
         }
     }
@@ -73,7 +77,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractToken(&token, &it, (const char*) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, &symbols, (const char*) ll_iteratorNext(&it));
             REQUIRE(FG_TOKEN_INVALID == res);
         }
     }
@@ -83,22 +87,23 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractToken(&token, &it, (const char*) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, &symbols, (const char*) ll_iteratorNext(&it));
             REQUIRE(FG_TOKEN_INVALID == res);
         }
     }
 
-    GIVEN("A valid string token") {
-        ll_pushBackBatch(&itemList, 4, "TOKEN", "=", "`FUNC`", ";");
+    GIVEN("A valid string token with a quantifier") {
+        ll_pushBackBatch(&itemList, 5, "TOKEN", "=", "`FUNC`", "+", ";");
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return ok and the token structure should have been updated") {
-            int res = fg_extractToken(&token, &it, (const char*) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, &symbols, (const char*) ll_iteratorNext(&it));
             REQUIRE(FG_OK == res);
 
             REQUIRE(FG_STRING_TOKEN == token.type);
             REQUIRE_THAT("TOKEN", Equals(token.name));
-            REQUIRE_THAT("FUNC", Equals(token.string));
+            REQUIRE(LEX_PLUS_QUANTIFIER == token.quantifier);
+            REQUIRE_THAT("FUNC", Equals(token.value.string));
         }
     }
 
@@ -107,38 +112,54 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return OK") {
-            int res = fg_extractToken(&token, &it, (const char*) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, &symbols, (const char*) ll_iteratorNext(&it));
             REQUIRE(FG_OK == res);
 
             AND_THEN("ranges pointer in token structure should have been updated") {
-                REQUIRE(2 == token.rangesNumber);
-                REQUIRE(token.ranges);
+                struct fg_RangesToken *rangesToken = &token.value.ranges;
+                REQUIRE(2 == rangesToken->rangesNumber);
+                REQUIRE(rangesToken->ranges);
             }
         }
     }
 
-    GIVEN("A valid range token with 2 ranges and a quantifier") {
-        ll_pushBackBatch(&itemList, 5, "TOKEN", "=", "[a-z2-4]", "+", ";");
+    GIVEN("A token with a self reference") {
+        ll_pushBackBatch(&itemList, 4, "TOKEN", "=", "TOKEN", ";");
         ll_Iterator it = ll_createIterator(&itemList);
 
-        THEN("It should return OK") {
-            int res = fg_extractToken(&token, &it, (const char*) ll_iteratorNext(&it));
-            REQUIRE(FG_OK == res);
+        THEN("It should return an error") {
+            int res = fg_extractToken(&token, &it, &symbols, (const char*) ll_iteratorNext(&it));
+            REQUIRE(FG_TOKEN_SELF_REF == res);
+        }
+    }
 
-            AND_THEN("ranges pointer in token structure should have been updated") {
-                REQUIRE(2 == token.rangesNumber);
-                REQUIRE(token.ranges);
+    GIVEN("One existing symbol (another token)") {
+        char *tokenSymbol = createCString("TOKEN2");
+        set_insertValue(&symbols, tokenSymbol);
+
+        GIVEN("A token with a ref on this token") {
+            ll_pushBackBatch(&itemList, 5, "TOKEN", "=", "TOKEN2", "?", ";");
+            ll_Iterator it = ll_createIterator(&itemList);
+
+            int res = fg_extractToken(&token, &it, &symbols, (const char*) ll_iteratorNext(&it));
+
+            THEN("It should return ok") {
+                REQUIRE(FG_OK == res);
             }
 
-            AND_THEN("each range should have its quantifier field updated") {
-                REQUIRE(LEX_PLUS_QUANTIFIER == token.ranges[0].quantifier);
-                REQUIRE(LEX_PLUS_QUANTIFIER == token.ranges[1].quantifier);
+            AND_THEN("The token type should be a ref") {
+                REQUIRE(FG_REF_TOKEN == token.type);
+            }
+
+            AND_THEN("The ref should be on TOKEN2") {
+                REQUIRE_THAT("TOKEN2", Equals(token.value.refToken));
             }
         }
     }
 
     fg_freeToken(&token);
     ll_freeLinkedList(&itemList, NULL);
+    set_freeSet(&symbols);
 }
 
 SCENARIO("A PRItem is either a reference to an existing token or a rule", "[formal_grammar]") {

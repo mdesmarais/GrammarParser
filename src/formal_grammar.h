@@ -4,20 +4,32 @@
 #include "hash_table.h"
 #include "lexer.h"
 #include "linked_list.h"
+#include "set.h"
 
 #include <string.h>
 
 typedef enum fg_TokenType {
     FG_RANGE_TOKEN,
+    FG_REF_TOKEN,
     FG_STRING_TOKEN
 } fg_TokenType;
+
+struct fg_RangesToken {
+    lex_Range *ranges;
+    size_t rangesNumber;
+};
+
+union fg_TokenValue {
+    char *refToken;
+    char *string;
+    struct fg_RangesToken ranges;
+};
 
 typedef struct fg_Token {
     fg_TokenType type;
     char *name;
-    char *string;
-    lex_Range *ranges;
-    int rangesNumber;
+    lex_RangeQuantifier quantifier;
+    union fg_TokenValue value;
 } fg_Token;
 
 typedef struct fg_Rule {
@@ -34,11 +46,13 @@ typedef struct fg_PRItem {
     fg_PrItemType type;
     fg_Rule *rule;
     fg_Token *token;
+    char *symbol;
 } fg_PRItem;
 
 typedef struct fg_Grammar {
     ht_Table tokens;
     ht_Table rules;
+    set_HashSet symbols;
 } fg_Grammar;
 
 typedef enum fg_ErrorCode {
@@ -48,6 +62,7 @@ typedef enum fg_ErrorCode {
     FG_TOKEN_MISSING_VALUE,
     FG_TOKEN_INVALID_VALUE,
     FG_TOKEN_UNKNOWN_VALUE_TYPE,
+    FG_TOKEN_SELF_REF,
 
     FG_RULE_EMPTY,
     FG_RULE_INVALID,
@@ -76,7 +91,7 @@ void fg_freeGrammar(fg_Grammar *g);
  * @param tokenName name of the token
  * @return FG_OK if not error occured
  */
-int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName);
+int fg_extractToken(fg_Token *token, ll_Iterator *it, set_HashSet *symbols, const char *tokenName);
 
 /**
  * Frees allocated memory in a token.

@@ -286,10 +286,11 @@ int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList) 
             fg_Token *token = malloc(sizeof(*token));
             memset(token, 0, sizeof(*token));
 
-            int errCode = fg_extractToken(token, &it, item);
+            int errCode = fg_extractToken(token, &it, &g->symbols, item);
 
             if (errCode != FG_OK) {
-                free(token);
+                fg_freeToken(token);
+                log_error("Token extraction error");
                 return errCode;
             }
 
@@ -300,15 +301,11 @@ int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList) 
             fg_Rule *rule = malloc(sizeof(*rule));
             fg_createRule(rule);
 
-            rule->name = calloc(strlen(item) + 1, 1);
-            strcpy(rule->name, item);
-
-            ht_insertElement(&g->rules, rule->name, rule);
-
             int errCode = fg_extractRule(rule, &it, g, item);
 
             if (errCode != FG_OK) {
-                ht_removeElement(&g->rules, rule->name);
+                fg_freeRule(rule);
+                log_error("Rule extraction error");
                 return errCode;
             }
         }
