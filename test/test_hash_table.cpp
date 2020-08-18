@@ -156,6 +156,15 @@ SCENARIO("Items in table can be retrieved individually with an iterator", "[hash
     ht_Table table;
     ht_createTable(&table, 6, intHash, intKeyComparator, NULL);
 
+    GIVEN("An empty map") {
+        ht_Iterator it;
+        ht_createIterator(&it, &table);
+
+        THEN("Iterator should be at the end") {
+            REQUIRE_FALSE(ht_iteratorHasNext(&it));
+        }
+    }
+
     GIVEN("A map with 3 pairs") {
         int n1 = 1;
         int v1 = 78;

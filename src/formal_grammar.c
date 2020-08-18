@@ -29,14 +29,12 @@ static void ruleDestructor(void *key, void *value) {
 void fg_createGrammar(fg_Grammar *g) {
     ht_createTable(&g->tokens, 10, ht_hashString, (ht_KeyComparator*) strcmp, tokenDestructor);
     ht_createTable(&g->rules, 10, ht_hashString, (ht_KeyComparator*) strcmp, ruleDestructor);
-    set_createSet(&g->symbols, 10, (ht_KeyComparator*) strcmp, free);
 }
 
 void fg_freeGrammar(fg_Grammar *g) {
     if (g) {
         ht_freeTable(&g->rules);
         ht_freeTable(&g->tokens);
-        set_freeSet(&g->symbols);
     }
 }
 
@@ -46,24 +44,13 @@ void fg_freeGrammar(fg_Grammar *g) {
     }                                                   \
 } while(0);
 
-static void insertSymbolIfNotExists(set_HashSet *symbols, const char *symbol) {
-    if (!set_contains(symbols, symbol)) {
-        char *copy = calloc(strlen(symbol) + 1, 1);
-        strcpy(copy, symbol);
-
-        set_insertValue(symbols, copy);
-    }
-}
-
-int fg_extractToken(fg_Token *token, ll_Iterator *it, set_HashSet *symbols, const char *tokenName) {
+int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
     assert(token);
     assert(it);
-    assert(symbols);
     assert(tokenName);
 
     token->name = calloc(strlen(tokenName) + 1, 1);
     strcpy(token->name, tokenName);
-    insertSymbolIfNotExists(symbols, tokenName);
 
     expectCharFromIt(it, '=', FG_TOKEN_INVALID);
 
@@ -104,9 +91,6 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, set_HashSet *symbols, cons
     else if (isalpha(*tokenValue) && isupper(*tokenValue)) {
         if (strcmp(tokenValue, tokenName) == 0) {
             return FG_TOKEN_SELF_REF;
-        }
-        if (!set_contains(symbols, tokenValue)) {
-            return FG_UNKNOWN_TOKEN;
         }
 
         char *symbol = calloc(strlen(tokenValue) + 1, 1);
@@ -174,10 +158,15 @@ void fg_freeToken(fg_Token *token) {
     }
 }
 
-int fg_extractRule(fg_Rule *rule, ll_Iterator *it, fg_Grammar *g, const char *ruleName) {
+static void prItemDestructor(void *data, void *args) {
+    fg_PRItem *prItem = data;
+    fg_freePrItem(prItem);
+    free(prItem);
+}
+
+int fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName) {
     assert(rule);
     assert(it);
-    assert(g);
     assert(ruleName);
 
     rule->name = calloc(strlen(ruleName) + 1, 1);
@@ -197,10 +186,10 @@ int fg_extractRule(fg_Rule *rule, ll_Iterator *it, fg_Grammar *g, const char *ru
         }
 
         ll_LinkedList *productionRule = malloc(sizeof(*productionRule));
-        ll_createLinkedList(productionRule, (ll_DataDestructor*) free);
+        ll_createLinkedList(productionRule, prItemDestructor);
 
         char *lastItem = NULL;
-        int errCode = fg_extractProductionRule(productionRule, it, g, currentItem, &lastItem);
+        int errCode = fg_extractProductionRule(productionRule, it, currentItem, &lastItem);
 
         if (errCode != FG_OK) {
             free(productionRule);
@@ -249,10 +238,9 @@ void fg_freeRule(fg_Rule *rule) {
     }
 }
 
-int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, fg_Grammar *grammar, char *currentItem, char **pLastItem) {
+int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, char *currentItem, char **pLastItem) {
     assert(prItemList);
     assert(it);
-    assert(grammar);
     assert(currentItem);
     assert(pLastItem);
 
@@ -270,7 +258,7 @@ int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, fg_Gram
         fg_PRItem *prItem = malloc(sizeof(*prItem));
         memset(prItem, 0, sizeof(*prItem));
 
-        int errCode = fg_extractPrItem(prItem, item, grammar);
+        int errCode = fg_extractPrItem(prItem, item);
 
         if (errCode != FG_OK) {
             ll_freeLinkedList(prItemList, NULL);
@@ -291,37 +279,25 @@ int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, fg_Gram
     return FG_OK;
 }
 
-int fg_extractPrItem(fg_PRItem *prItem, const char *item, fg_Grammar *g) {
+int fg_extractPrItem(fg_PRItem *prItem, const char *item) {
     assert(prItem);
     assert(item);
-    assert(g);
 
     if (!isalpha(*item)) {
         return FG_PRITEM_UNKNOWN_TYPE;
     }
 
-    if (islower(*item)) {
-        // it should be a rule
-        fg_Rule *rule = ht_getValue(&g->rules, item);
+    char *symbol = calloc(strlen(item) + 1, 1);
+    strcpy(symbol, item);
+    prItem->symbol = symbol;
 
-        if (!rule) {
-            return FG_UNKNOWN_RULE;
-        }
-
-        prItem->type = FG_RULE_ITEM;
-        prItem->rule = rule;
-    }
-    else {
-        // it should be a token
-        fg_Token *token = ht_getValue(&g->tokens, item);
-
-        if (!token) {
-            return FG_UNKNOWN_TOKEN;
-        }
-
-        prItem->type = FG_TOKEN_ITEM;
-        prItem->token = token;
-    }
+    prItem->type = (islower(*item)) ? FG_RULE_ITEM : FG_TOKEN_ITEM;
 
     return FG_OK;
+}
+
+void fg_freePrItem(fg_PRItem *prItem) {
+    if (prItem) {
+        free(prItem->symbol);
+    }
 }

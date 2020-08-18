@@ -4,7 +4,6 @@
 #include "hash_table.h"
 #include "lexer.h"
 #include "linked_list.h"
-#include "set.h"
 
 #include <string.h>
 
@@ -52,7 +51,6 @@ typedef struct fg_PRItem {
 typedef struct fg_Grammar {
     ht_Table tokens;
     ht_Table rules;
-    set_HashSet symbols;
 } fg_Grammar;
 
 typedef enum fg_ErrorCode {
@@ -91,7 +89,7 @@ void fg_freeGrammar(fg_Grammar *g);
  * @param tokenName name of the token
  * @return FG_OK if not error occured
  */
-int fg_extractToken(fg_Token *token, ll_Iterator *it, set_HashSet *symbols, const char *tokenName);
+int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName);
 
 /**
  * Frees allocated memory in a token.
@@ -102,13 +100,15 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, set_HashSet *symbols, cons
  */
 void fg_freeToken(fg_Token *token);
 
-int fg_extractRule(fg_Rule *rule, ll_Iterator *it, fg_Grammar *g, const char *ruleName);
+int fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName);
 
 void fg_createRule(fg_Rule *rule);
 void fg_freeRule(fg_Rule *rule);
 
-int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, fg_Grammar *grammar, char *currentItem, char **pLastItem);
+int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, char *currentItem, char **pLastItem);
 
-int fg_extractPrItem(fg_PRItem *prItem, const char *item, fg_Grammar *g);
+int fg_extractPrItem(fg_PRItem *prItem, const char *item);
+
+void fg_freePrItem(fg_PRItem *prItem);
 
 #endif //LEXER_FORMAL_GRAMMAR_H

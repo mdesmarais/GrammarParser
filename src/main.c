@@ -25,11 +25,17 @@ int main() {
     fg_createGrammar(&g);
     int errCode = lex_parseGrammarItems(&g, &itemList);
 
+    if (errCode != FG_OK) {
+        log_error("Error during parsing : %d", errCode);
+    }
+
+    errCode = lex_resolveSymbols(&g);
+
     if (errCode == FG_OK) {
-        log_info("Number of rules : %ld\nNumber of tokens : %ld", g.rules.size, g.tokens.size);
+        log_info("Extracted tokens : %d\nExtracted rules :%d", g.tokens.size, g.rules.size);
     }
     else {
-        log_error("Error code : %d", errCode);
+        log_error("Error during resolution : %d", errCode);
     }
 
     free(grammarBuffer);

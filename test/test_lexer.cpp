@@ -1,14 +1,25 @@
 #include <catch2/catch.hpp>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <fstream>
 #include <string>
+#include <sstream>
 
 extern "C" {
+#include <formal_grammar.h>
 #include <lexer.h>
 #include <linked_list.h>
 };
+
+using Catch::Matchers::Equals;
+
+static char* allocateCString(std::string str) {
+    char *string = (char*) calloc(str.size() + 1, 1);
+    return strcpy(string, str.c_str());
+}
 
 SCENARIO("Create a letter range from two given chars", "[lexer]") {
     lex_Range range = {};
@@ -207,5 +218,169 @@ SCENARIO("Items can be extracted from a raw grammar", "[lexer]") {
         }
     }
 
+    ll_freeLinkedList(&itemList, NULL);
+}
+
+SCENARIO("Read a grammar file into a dynamic buffer", "[lexer]") {
+    GIVEN("A sample file") {
+        FILE *f = fopen("data/test_01.txt", "r");
+        REQUIRE(f);
+
+        GIVEN("A null buffer") {
+            char *buffer = NULL;
+
+            ssize_t length = lex_readGrammar(f, &buffer);
+
+            THEN("The buffer should not be null anymore") {
+                REQUIRE(buffer);
+                REQUIRE(length > 0);
+            }
+
+            AND_THEN("The buffer should be null terminated") {
+                REQUIRE('\0' == buffer[length]);
+            }
+
+            AND_THEN("The buffer's content should equal to the file's content") {
+                std::ifstream is { "data/test_01.txt"};
+                REQUIRE(is.is_open());
+
+                std::stringstream expected;
+                expected << is.rdbuf();
+
+                REQUIRE_THAT(expected.str(), Equals(buffer));
+            }
+
+            free(buffer);
+        }
+
+        fclose(f);
+        f = NULL;
+    }
+}
+
+SCENARIO("Extract tokens and rules from a list of items", "[lexer]") {
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
+
+    fg_Grammar g;
+    fg_createGrammar(&g);
+
+    GIVEN("A list with a valid token and an unknown item") {
+        ll_pushBackBatch(&itemList, 6, "TOKEN1", "=", "[a-z]", ";", "`hello`", ";");
+
+        int res = lex_parseGrammarItems(&g, &itemList);
+
+        THEN("It should return an error") {
+            REQUIRE(LEXER_UNKNOWN_ITEM == res);
+        }
+    }
+
+    GIVEN("A list with 1 rule and 1 token") {
+        ll_pushBackBatch(&itemList, 8, "TOKEN1", "=", "`hello`", ";", "rule1", "=", "TOKEN1", ";");
+
+        int res = lex_parseGrammarItems(&g, &itemList);
+
+        THEN("It should return OK") {
+            REQUIRE(LEXER_OK == res);
+        }
+    }
+
+    GIVEN("A list with an invalid token") {
+        ll_pushBackBatch(&itemList, 3, "TOKEN1", "=", ";");
+
+        int res = lex_parseGrammarItems(&g, &itemList);
+
+        THEN("It should return an error") {
+            REQUIRE_FALSE(LEXER_OK == res);
+        }
+    }
+
+    GIVEN("A list with an invalid rule") {
+        ll_pushBackBatch(&itemList, 3, "rule", "TOKEN", ";");
+
+        int res = lex_parseGrammarItems(&g, &itemList);
+
+        THEN("It should return an error") {
+            REQUIRE_FALSE(LEXER_OK == res);
+        }
+    }
+
+    fg_freeGrammar(&g);
+    ll_freeLinkedList(&itemList, NULL);
+}
+
+SCENARIO("symbols resolution is used to allow recursive rules", "[lexer]") {
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, NULL);
+
+    fg_Grammar g;
+    fg_createGrammar(&g);
+
+    GIVEN("A token that uses an unknown token") {
+        ll_pushBackBatch(&itemList, 4, "TOKEN1", "=", "TOKEN2", ";");
+
+        int res = lex_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == LEXER_OK);
+
+        WHEN("resolving symbols") {
+            res = lex_resolveSymbols(&g);
+
+            THEN("It should return an error") {
+                REQUIRE(res == FG_UNKNOWN_TOKEN);
+            }
+        }
+    }
+
+    GIVEN("A rule that uses an unknown rule") {
+        ll_pushBackBatch(&itemList, 4, "rule1", "=", "rule2", ";");
+
+        int res = lex_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == LEXER_OK);
+
+        WHEN("resolving symbols") {
+            res = lex_resolveSymbols(&g);
+
+            THEN("It should return an error") {
+                REQUIRE(res == FG_UNKNOWN_RULE);
+            }
+        }
+    }
+
+    GIVEN("A rule that uses an unknown token") {
+        ll_pushBackBatch(&itemList, 4, "rule1", "=", "TOKEN1", ";");
+
+        int res = lex_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == LEXER_OK);
+
+        WHEN("resolving symbols") {
+            res = lex_resolveSymbols(&g);
+
+            THEN("It should return an error") {
+                REQUIRE(res == FG_UNKNOWN_TOKEN);
+            }
+        }
+    }
+
+    GIVEN("Two rules : one is using the other and a token") {
+        ll_pushBackBatch(&itemList, 15, "rule1", "=", "rule1", "TOKEN1", "|", "rule2", ";",
+                         "TOKEN1", "=", "[a-z]", ";", "rule2", "=", "TOKEN1", ";");
+
+        int res = lex_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == LEXER_OK);
+
+        WHEN("resolving symbols") {
+            res = lex_resolveSymbols(&g);
+
+            THEN("It should return OK") {
+                REQUIRE(LEXER_OK == res);
+            }
+
+            AND_THEN("Resolution on rule1's production rule should have be done") {
+                ht_KVPair *pair = (ht_KVPair*) ht_getValue(&g.rules, "rule1");
+            }
+        }
+    }
+
+    fg_freeGrammar(&g);
     ll_freeLinkedList(&itemList, NULL);
 }

@@ -152,16 +152,23 @@ void *ht_getValue(ht_Table *table, const void *key) {
     return (pair) ? pair->value : NULL;
 }
 
+static size_t firstNonEmptyBucketIndex(ll_LinkedList *buckets, size_t offset, size_t limit) {
+    size_t index = offset;
+
+    while (index < limit && buckets[index].size == 0) {
+        ++index;
+    }
+
+    return index;
+}
+
 void ht_createIterator(ht_Iterator *it, ht_Table *table) {
     assert(it);
     assert(table);
     assert(table->capacity > 0);
 
     // Looking for the first non empty bucket
-    size_t index = 0;
-    while (index < table->capacity && table->buckets[index].size == 0) {
-        ++index;
-    }
+    size_t index = firstNonEmptyBucketIndex(table->buckets, 0, table->capacity);
 
     it->table = table;
     it->bucketIndex = index;
@@ -174,8 +181,7 @@ void ht_createIterator(ht_Iterator *it, ht_Table *table) {
 bool ht_iteratorHasNext(ht_Iterator *it) {
     assert(it);
 
-    return ll_iteratorHasNext(&it->internalIt)
-        || (it->bucketIndex < it->table->capacity && it->table->buckets[it->bucketIndex + 1].size > 0);
+    return it->bucketIndex < it->table->capacity && ll_iteratorHasNext(&it->internalIt);
 }
 
 ht_KVPair *ht_iteratorNext(ht_Iterator *it) {
@@ -185,10 +191,7 @@ ht_KVPair *ht_iteratorNext(ht_Iterator *it) {
     ht_KVPair *current = ll_iteratorNext(&it->internalIt);
 
     if (!ll_iteratorHasNext(&it->internalIt)) {
-        ++it->bucketIndex;
-        while (it->bucketIndex < it->table->capacity && it->table->buckets[it->bucketIndex].size == 0) {
-            ++it->bucketIndex;
-        }
+        it->bucketIndex = firstNonEmptyBucketIndex(it->table->buckets, it->bucketIndex + 1, it->table->capacity);
 
         if (it->bucketIndex < it->table->capacity) {
             ll_initIterator(&it->internalIt, it->table->buckets + it->bucketIndex);

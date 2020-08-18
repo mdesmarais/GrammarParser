@@ -266,7 +266,7 @@ ssize_t lex_readGrammar(FILE *stream, char **pBuffer) {
     return pos;
 }
 
-int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList) {
+int lex_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
     assert(g);
     assert(itemList);
 
@@ -278,7 +278,7 @@ int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList) 
         if (!isalpha(*item)) {
             // error
             log_error("unknown item %s", item);
-            break;
+            return LEXER_UNKNOWN_ITEM;
         }
 
         if (isupper(*item)) {
@@ -286,10 +286,11 @@ int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList) 
             fg_Token *token = malloc(sizeof(*token));
             memset(token, 0, sizeof(*token));
 
-            int errCode = fg_extractToken(token, &it, &g->symbols, item);
+            int errCode = fg_extractToken(token, &it, item);
 
             if (errCode != FG_OK) {
                 fg_freeToken(token);
+                free(token);
                 log_error("Token extraction error");
                 return errCode;
             }
@@ -301,17 +302,98 @@ int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList) 
             fg_Rule *rule = malloc(sizeof(*rule));
             fg_createRule(rule);
 
-            int errCode = fg_extractRule(rule, &it, g, item);
+            int errCode = fg_extractRule(rule, &it, item);
 
             if (errCode != FG_OK) {
                 fg_freeRule(rule);
+                free(rule);
                 log_error("Rule extraction error");
                 return errCode;
             }
+
+            ht_insertElement(&g->rules, rule->name, rule);
         }
     }
 
-    return 0;
+    return LEXER_OK;
+}
+
+struct ResolverArg {
+    fg_Grammar *g;
+    fg_Rule *rule;
+    int errCode;
+};
+
+static void resolveProductionRulesSymbols(void *data, void *args) {
+    ll_LinkedList *pr = data;
+    struct ResolverArg *resolverArg = args;
+
+    ll_Iterator it;
+    ll_initIterator(&it, pr);
+
+    while (ll_iteratorHasNext(&it)) {
+        fg_PRItem *prItem = ll_iteratorNext(&it);
+
+        if (prItem->type == FG_RULE_ITEM) {
+            fg_Rule *refRule = ht_getValue(&resolverArg->g->rules, prItem->symbol);
+
+            if (!refRule) {
+                resolverArg->errCode = FG_UNKNOWN_RULE;
+                log_error("Unknown rule %s for %s", prItem->symbol, resolverArg->rule->name);
+                break;
+            }
+        }
+        else if (prItem->type == FG_TOKEN_ITEM) {
+            fg_Token *refToken = ht_getValue(&resolverArg->g->tokens, prItem->symbol);
+
+            if (!refToken) {
+                resolverArg->errCode = FG_UNKNOWN_TOKEN;
+                log_error("Unknown token %s for %s", prItem->symbol, resolverArg->rule->name);
+                break;
+            }
+        }
+    }
+}
+
+int lex_resolveSymbols(fg_Grammar *g) {
+    ht_Iterator tokensIt;
+    ht_createIterator(&tokensIt, &g->tokens);
+
+    ht_Iterator rulesIt;
+    ht_createIterator(&rulesIt, &g->rules);
+
+    while (ht_iteratorHasNext(&tokensIt)) {
+        ht_KVPair *pair = ht_iteratorNext(&tokensIt);
+        fg_Token *token = pair->value;
+
+        if (token->type == FG_REF_TOKEN) {
+            fg_Token *refToken = ht_getValue(&g->tokens, token->value.refToken);
+
+            if (!refToken) {
+                log_error("Unknown token %s for %s", token->value.refToken, token->name);
+                return FG_UNKNOWN_TOKEN;
+            }
+
+            // @TODO
+        }
+    }
+
+    struct ResolverArg resolverArg = { .g = g, .errCode = FG_OK };
+
+    while (ht_iteratorHasNext(&rulesIt)) {
+        ht_KVPair *pair = ht_iteratorNext(&rulesIt);
+        fg_Rule *rule = pair->value;
+
+        resolverArg.rule = rule;
+
+        ll_forEachItem(&rule->productionRuleList, resolveProductionRulesSymbols, &resolverArg);
+
+        if (resolverArg.errCode != FG_OK) {
+            return resolverArg.errCode;
+        }
+    }
+
+    return LEXER_OK;
 }
 
 int lex_splitDelimiters(ll_Iterator *it, const char *delimiters, size_t delimitersCount) {

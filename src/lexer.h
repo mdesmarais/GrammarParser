@@ -21,10 +21,10 @@ typedef enum lex_RetCode {
     LEXER_OK,
     LEXER_INVALID_CHAR_RANGE,
     LEXER_INVALID_RANGE,
-    LEXER_INVALID_RANGE_PATTERN
-} lex_RetCode;
+    LEXER_INVALID_RANGE_PATTERN,
 
-#define LEXER_LOG_ERROR(code) log_error("%s -> %d", __FUNCTION__, (code))
+    LEXER_UNKNOWN_ITEM
+} lex_RetCode;
 
 struct ll_LinkedList;
 struct ll_Iterator;
@@ -52,6 +52,8 @@ int lex_extractRanges(lex_Range **pRanges, const char *input, size_t length);
 int lex_extractGrammarItems(const char *source, size_t length, struct ll_LinkedList *itemList);
 
 int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList);
+
+int lex_resolveSymbols(struct fg_Grammar *g);
 
 /**
  * Reads a raw grammar from a stream
