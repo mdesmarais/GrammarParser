@@ -271,6 +271,7 @@ int lex_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
     assert(itemList);
 
     ll_Iterator it = ll_createIterator(itemList);
+    fg_Rule *entryRule = NULL;
 
     while (ll_iteratorHasNext(&it)) {
         char *item = ll_iteratorNext(&it);
@@ -312,8 +313,14 @@ int lex_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
             }
 
             ht_insertElement(&g->rules, rule->name, rule);
+
+            if (!entryRule) {
+                entryRule = rule;
+            }
         }
     }
+
+    g->entry = entryRule;
 
     return LEXER_OK;
 }

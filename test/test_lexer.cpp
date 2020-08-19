@@ -283,6 +283,13 @@ SCENARIO("Extract tokens and rules from a list of items", "[lexer]") {
         THEN("It should return OK") {
             REQUIRE(LEXER_OK == res);
         }
+
+        AND_THEN("The entry rule should be rule1") {
+            fg_Rule *rule1 = (fg_Rule*) ht_getValue(&g.rules, "rule1");
+
+            REQUIRE(rule1);
+            REQUIRE(g.entry == rule1);
+        }
     }
 
     GIVEN("A list with an invalid token") {

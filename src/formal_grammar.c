@@ -27,6 +27,7 @@ static void ruleDestructor(void *key, void *value) {
 }
 
 void fg_createGrammar(fg_Grammar *g) {
+    g->entry = NULL;
     ht_createTable(&g->tokens, 10, ht_hashString, (ht_KeyComparator*) strcmp, tokenDestructor);
     ht_createTable(&g->rules, 10, ht_hashString, (ht_KeyComparator*) strcmp, ruleDestructor);
 }
@@ -35,6 +36,7 @@ void fg_freeGrammar(fg_Grammar *g) {
     if (g) {
         ht_freeTable(&g->rules);
         ht_freeTable(&g->tokens);
+        g->entry = NULL;
     }
 }
 

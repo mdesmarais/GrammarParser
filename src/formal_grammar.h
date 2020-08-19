@@ -58,6 +58,7 @@ typedef struct fg_PRItem {
 typedef struct fg_Grammar {
     ht_Table tokens;
     ht_Table rules;
+    fg_Rule *entry;
 } fg_Grammar;
 
 typedef enum fg_ErrorCode {
