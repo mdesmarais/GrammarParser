@@ -77,7 +77,7 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
     else if (*tokenValue == '[') {
         token->type = FG_RANGE_TOKEN;
 
-        struct fg_RangesToken *rangesToken = &token->value.ranges;
+        struct fg_RangesToken *rangesToken = &token->value.rangesToken;
 
         // lex_extractRanges expects a string without square brackets : [...]
         int extractedRanges = lex_extractRanges(&rangesToken->ranges, tokenValue + 1, strlen(tokenValue) - 2);
@@ -97,7 +97,7 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
         strcpy(symbol, tokenValue);
 
         token->type = FG_REF_TOKEN;
-        token->value.refToken = symbol;
+        token->value.refToken.symbol = symbol;
     }
     else {
         fg_freeToken(token);
@@ -141,10 +141,10 @@ void fg_freeToken(fg_Token *token) {
 
         switch (token->type) {
             case FG_RANGE_TOKEN:
-                free(token->value.ranges.ranges);
+                free(token->value.rangesToken.ranges);
                 break;
             case FG_REF_TOKEN:
-                free(token->value.refToken);
+                free(token->value.refToken.symbol);
                 break;
             case FG_STRING_TOKEN:
                 free(token->value.string);
@@ -152,7 +152,6 @@ void fg_freeToken(fg_Token *token) {
             default:
                 break;
         }
-
 
         memset(token, 0, sizeof(*token));
     }

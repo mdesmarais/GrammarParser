@@ -376,7 +376,42 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[lexer]") {
             }
 
             AND_THEN("Resolution on rule1's production rule should have be done") {
-                ht_KVPair *pair = (ht_KVPair*) ht_getValue(&g.rules, "rule1");
+                fg_Rule *rule1 = (fg_Rule*) ht_getValue(&g.rules, "rule1");
+
+                ll_Iterator it = ll_createIterator((ll_LinkedList*) rule1->productionRuleList.front->data);
+
+                // Testing recursive rule
+                fg_PRItem *prItem1 = (fg_PRItem*) ll_iteratorNext(&it);
+                REQUIRE(rule1 == prItem1->rule);
+
+                fg_PRItem *prItem2 = (fg_PRItem*) ll_iteratorNext(&it);
+                fg_Token *token1 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN1");
+                REQUIRE(token1 == prItem2->token);
+            }
+        }
+    }
+
+    GIVEN("Two tokens : one is referencing the other") {
+        ll_pushBackBatch(&itemList, 8, "TOKEN1", "=", "TOKEN2", ";", "TOKEN2", "=", "`test`", ";");
+
+        int res = lex_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == LEXER_OK);
+
+        WHEN("Resolving symbols") {
+            res = lex_resolveSymbols(&g);
+
+            THEN("It should return ok") {
+                REQUIRE(LEXER_OK == res);
+            }
+
+            AND_THEN("TOKEN1 should have a reference on TOKEN2") {
+                fg_Token *token1 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN1");
+                fg_Token *token2 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN2");
+
+                REQUIRE(token1);
+                REQUIRE(token2);
+
+                REQUIRE(token2 == token1->value.refToken.token);
             }
         }
     }

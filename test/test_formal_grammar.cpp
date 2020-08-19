@@ -76,7 +76,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
             REQUIRE(FG_OK == res);
 
             AND_THEN("ranges pointer in token structure should have been updated") {
-                struct fg_RangesToken *rangesToken = &token.value.ranges;
+                struct fg_RangesToken *rangesToken = &token.value.rangesToken;
                 REQUIRE(2 == rangesToken->rangesNumber);
                 REQUIRE(rangesToken->ranges);
             }
@@ -107,8 +107,8 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
             REQUIRE(FG_REF_TOKEN == token.type);
         }
 
-        AND_THEN("The ref should be on TOKEN2") {
-            REQUIRE_THAT("TOKEN2", Equals(token.value.refToken));
+        AND_THEN("The ref symbol should be on TOKEN2") {
+            REQUIRE_THAT("TOKEN2", Equals(token.value.refToken.symbol));
         }
     }
 

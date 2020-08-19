@@ -18,10 +18,17 @@ struct fg_RangesToken {
     size_t rangesNumber;
 };
 
+struct fg_Token;
+
+struct fg_RefToken {
+    char *symbol;
+    struct fg_Token *token;
+};
+
 union fg_TokenValue {
-    char *refToken;
+    struct fg_RangesToken rangesToken;
+    struct fg_RefToken refToken;
     char *string;
-    struct fg_RangesToken ranges;
 };
 
 typedef struct fg_Token {

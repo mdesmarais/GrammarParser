@@ -342,6 +342,8 @@ static void resolveProductionRulesSymbols(void *data, void *args) {
                 log_error("Unknown rule %s for %s", prItem->symbol, resolverArg->rule->name);
                 break;
             }
+
+            prItem->rule = refRule;
         }
         else if (prItem->type == FG_TOKEN_ITEM) {
             fg_Token *refToken = ht_getValue(&resolverArg->g->tokens, prItem->symbol);
@@ -351,6 +353,8 @@ static void resolveProductionRulesSymbols(void *data, void *args) {
                 log_error("Unknown token %s for %s", prItem->symbol, resolverArg->rule->name);
                 break;
             }
+
+            prItem->token = refToken;
         }
     }
 }
@@ -367,14 +371,15 @@ int lex_resolveSymbols(fg_Grammar *g) {
         fg_Token *token = pair->value;
 
         if (token->type == FG_REF_TOKEN) {
-            fg_Token *refToken = ht_getValue(&g->tokens, token->value.refToken);
+            struct fg_RefToken *refTokenValue = &token->value.refToken;
+            fg_Token *refToken = ht_getValue(&g->tokens, refTokenValue->symbol);
 
             if (!refToken) {
-                log_error("Unknown token %s for %s", token->value.refToken, token->name);
+                log_error("Unknown token %s for %s", refTokenValue->symbol, token->name);
                 return FG_UNKNOWN_TOKEN;
             }
 
-            // @TODO
+            refTokenValue->token = refToken;
         }
     }
 
