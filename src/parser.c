@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include "parser.h"
 
 #include "formal_grammar.h"
 #include "linked_list.h"
@@ -10,10 +10,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static const char DIGITS[] = {"0123456789" };
-static const char LETTERS[] = {"abcdefghijklmnopqrstuvwxyz" };
+static const char DIGITS[] = { "0123456789" };
+static const char LETTERS[] = { "abcdefghijklmnopqrstuvwxyz" };
 
-static int createRange(lex_Range *range, char x, char y, const char *seq) {
+static int createRange(prs_Range *range, char x, char y, const char *seq) {
     assert(range);
     assert(seq);
 
@@ -21,26 +21,26 @@ static int createRange(lex_Range *range, char x, char y, const char *seq) {
     const char *end = strchr(seq, y);
 
     if (!start || !end) {
-        return LEXER_INVALID_CHAR_RANGE;
+        return PRS_INVALID_CHAR_RANGE;
     }
 
     if (start > end) {
-        return LEXER_INVALID_RANGE;
+        return PRS_INVALID_RANGE;
     }
 
     range->start = start;
     range->end = end + 1;
 
-    return LEXER_OK;
+    return PRS_OK;
 }
 
-int lex_createDigitRange(lex_Range *range, char n1, char n2) {
+int prs_createDigitRange(prs_Range *range, char n1, char n2) {
     assert(range);
 
     return createRange(range, n1, n2, DIGITS);
 }
 
-int lex_createLetterRange(lex_Range *range, char c1, char c2, bool uppercase) {
+int prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase) {
     assert(range);
 
     range->uppercaseLetter = uppercase;
@@ -65,7 +65,7 @@ int lex_createLetterRange(lex_Range *range, char c1, char c2, bool uppercase) {
     return false;
 } */
 
-int lex_extractRange(lex_Range *range, const char *input) {
+int prs_extractRange(prs_Range *range, const char *input) {
     assert(range);
     assert(input);
 
@@ -74,21 +74,21 @@ int lex_extractRange(lex_Range *range, const char *input) {
     int extractedElements = sscanf(input, "%c-%c", &c1, &c2);
 
     if (extractedElements != 2) {
-        return LEXER_INVALID_RANGE_PATTERN;
+        return PRS_INVALID_RANGE_PATTERN;
     }
 
     if (isalpha(c1) && isalpha(c2)) {
-        return lex_createLetterRange(range, c1, c2, isupper(c1) && isupper(c2));
+        return prs_createLetterRange(range, c1, c2, isupper(c1) && isupper(c2));
     }
     else if (isdigit(c1) && isdigit(c2)) {
-        return lex_createDigitRange(range, c1, c2);
+        return prs_createDigitRange(range, c1, c2);
     }
     else {
-        return LEXER_INVALID_RANGE_PATTERN;
+        return PRS_INVALID_RANGE_PATTERN;
     }
 }
 
-int lex_extractRanges(lex_Range **pRanges, const char *input, size_t length) {
+int prs_extractRanges(prs_Range **pRanges, const char *input, size_t length) {
     assert(pRanges);
     assert(input);
 
@@ -111,7 +111,7 @@ int lex_extractRanges(lex_Range **pRanges, const char *input, size_t length) {
     }
 
     size_t rangesNumber = lengthWithoutSpaces / 3;
-    lex_Range *ranges = calloc(rangesNumber, sizeof(*ranges));
+    prs_Range *ranges = calloc(rangesNumber, sizeof(*ranges));
 
     if (!ranges) {
         free(buffer);
@@ -122,7 +122,7 @@ int lex_extractRanges(lex_Range **pRanges, const char *input, size_t length) {
     size_t i;
 
     for (i = 0;i < rangesNumber;++i) {
-        if (lex_extractRange(ranges + i, pos) != LEXER_OK) {
+        if (prs_extractRange(ranges + i, pos) != PRS_OK) {
             free(buffer);
             free(ranges);
             return -1;
@@ -136,7 +136,7 @@ int lex_extractRanges(lex_Range **pRanges, const char *input, size_t length) {
     return i;
 }
 
-int lex_extractGrammarItems(const char *source, size_t length, ll_LinkedList *itemList) {
+int prs_extractGrammarItems(const char *source, size_t length, ll_LinkedList *itemList) {
     assert(source);
     assert(itemList);
 
@@ -215,12 +215,12 @@ int lex_extractGrammarItems(const char *source, size_t length, ll_LinkedList *it
 
     const char *delimiters = "+|?;=";
     ll_Iterator it = ll_createIterator(itemList);
-    int pwet = lex_splitDelimiters(&it, delimiters, strlen(delimiters));
+    int pwet = prs_splitDelimiters(&it, delimiters, strlen(delimiters));
 
     return extractedItems + pwet;
 }
 
-ssize_t lex_readGrammar(FILE *stream, char **pBuffer) {
+ssize_t prs_readGrammar(FILE *stream, char **pBuffer) {
     assert(stream);
     assert(pBuffer);
 
@@ -266,7 +266,7 @@ ssize_t lex_readGrammar(FILE *stream, char **pBuffer) {
     return pos;
 }
 
-int lex_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
+int prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
     assert(g);
     assert(itemList);
 
@@ -279,7 +279,7 @@ int lex_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
         if (!isalpha(*item)) {
             // error
             log_error("unknown item %s", item);
-            return LEXER_UNKNOWN_ITEM;
+            return PRS_UNKNOWN_ITEM;
         }
 
         if (isupper(*item)) {
@@ -322,7 +322,7 @@ int lex_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
 
     g->entry = entryRule;
 
-    return LEXER_OK;
+    return PRS_OK;
 }
 
 struct ResolverArg {
@@ -366,7 +366,7 @@ static void resolveProductionRulesSymbols(void *data, void *args) {
     }
 }
 
-int lex_resolveSymbols(fg_Grammar *g) {
+int prs_resolveSymbols(fg_Grammar *g) {
     ht_Iterator tokensIt;
     ht_createIterator(&tokensIt, &g->tokens);
 
@@ -405,10 +405,10 @@ int lex_resolveSymbols(fg_Grammar *g) {
         }
     }
 
-    return LEXER_OK;
+    return PRS_OK;
 }
 
-int lex_splitDelimiters(ll_Iterator *it, const char *delimiters, size_t delimitersCount) {
+int prs_splitDelimiters(ll_Iterator *it, const char *delimiters, size_t delimitersCount) {
     assert(it);
     assert(delimiters);
 

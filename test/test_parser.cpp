@@ -10,8 +10,8 @@
 
 extern "C" {
 #include <formal_grammar.h>
-#include <lexer.h>
 #include <linked_list.h>
+#include <parser.h>
 };
 
 using Catch::Matchers::Equals;
@@ -21,38 +21,38 @@ static char* allocateCString(std::string str) {
     return strcpy(string, str.c_str());
 }
 
-SCENARIO("Create a letter range from two given chars", "[lexer]") {
-    lex_Range range = {};
+SCENARIO("Create a letter range from two given chars", "[parser]") {
+    prs_Range range = {};
 
     GIVEN("The first character that is not a valid letter") {
-        int result = lex_createLetterRange(&range, '$', 'f', false);
+        int result = prs_createLetterRange(&range, '$', 'f', false);
 
         THEN("It should return an error") {
-            REQUIRE(LEXER_INVALID_CHAR_RANGE == result);
+            REQUIRE(PRS_INVALID_CHAR_RANGE == result);
         }
     }
 
     GIVEN("The second character that is not a valid letter") {
-        int result = lex_createLetterRange(&range, 'f', '$', false);
+        int result = prs_createLetterRange(&range, 'f', '$', false);
 
         THEN("It should return an error") {
-            REQUIRE(LEXER_INVALID_CHAR_RANGE == result);
+            REQUIRE(PRS_INVALID_CHAR_RANGE == result);
         }
     }
 
     GIVEN("First character is after the second in the lexicographic order") {
-        int result = lex_createLetterRange(&range, 'f', 'b', false);
+        int result = prs_createLetterRange(&range, 'f', 'b', false);
 
         THEN("It should return an error") {
-            REQUIRE(LEXER_INVALID_RANGE == result);
+            REQUIRE(PRS_INVALID_RANGE == result);
         }
     }
 
     GIVEN("Two valid characters") {
-        int result = lex_createLetterRange(&range, 'x', 'z', false);
+        int result = prs_createLetterRange(&range, 'x', 'z', false);
 
         THEN("It should return OK") {
-            REQUIRE(LEXER_OK == result);
+            REQUIRE(PRS_OK == result);
 
             AND_THEN("range struct should have its first pointer on char x") {
                 REQUIRE('x' == *range.start);
@@ -65,13 +65,13 @@ SCENARIO("Create a letter range from two given chars", "[lexer]") {
     }
 }
 
-SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[lexer]") {
-    lex_Range range = {};
+SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[parser]") {
+    prs_Range range = {};
     GIVEN("A pattern without a dash") {
         std::string input = "abc";
 
         THEN("It should return an error") {
-            REQUIRE(LEXER_INVALID_RANGE_PATTERN == lex_extractRange(&range, input.c_str()));
+            REQUIRE(PRS_INVALID_RANGE_PATTERN == prs_extractRange(&range, input.c_str()));
         }
     }
 
@@ -79,7 +79,7 @@ SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[lexe
         std::string input = "a-7";
 
         THEN("It should return an error") {
-            REQUIRE(LEXER_INVALID_RANGE_PATTERN == lex_extractRange(&range, input.c_str()));
+            REQUIRE(PRS_INVALID_RANGE_PATTERN == prs_extractRange(&range, input.c_str()));
         }
     }
 
@@ -87,7 +87,7 @@ SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[lexe
         std::string input = "a-b";
 
         THEN("It should return OK") {
-            REQUIRE(LEXER_OK == lex_extractRange(&range, input.c_str()));
+            REQUIRE(PRS_OK == prs_extractRange(&range, input.c_str()));
 
             AND_THEN("Range structure should have its first pointer on char a") {
                 REQUIRE('a' == *range.start);
@@ -105,7 +105,7 @@ SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[lexe
         std::string input = "A-B";
 
         THEN("It should return OK") {
-            REQUIRE(LEXER_OK == lex_extractRange(&range, input.c_str()));
+            REQUIRE(PRS_OK == prs_extractRange(&range, input.c_str()));
 
             AND_THEN("Range structure should have its first pointer on char a") {
                 REQUIRE('a' == *range.start);
@@ -125,7 +125,7 @@ SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[lexe
         std::string input = "1-5";
 
         THEN("It should return OK") {
-            REQUIRE(LEXER_OK == lex_extractRange(&range, input.c_str()));
+            REQUIRE(PRS_OK == prs_extractRange(&range, input.c_str()));
 
             AND_THEN("Range structure should have its first pointer on char 1") {
                 REQUIRE('1' == *range.start);
@@ -138,14 +138,14 @@ SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[lexe
     }
 }
 
-SCENARIO("A range block ([...]) can contain several ranges", "[lexer]") {
-    lex_Range *ranges = NULL;
+SCENARIO("A range block ([...]) can contain several ranges", "[parser]") {
+    prs_Range *ranges = NULL;
 
     GIVEN("An empty string") {
         std::string input = "";
 
         THEN("It should return 0") {
-            REQUIRE(0 == lex_extractRanges(&ranges, input.c_str(), input.size()));
+            REQUIRE(0 == prs_extractRanges(&ranges, input.c_str(), input.size()));
 
             AND_THEN("The input pointer should remaiun unchanged (NULL)") {
                 REQUIRE_FALSE(ranges);
@@ -157,7 +157,7 @@ SCENARIO("A range block ([...]) can contain several ranges", "[lexer]") {
         std::string input = "a-zA-Z0-9";
 
         THEN("It shoud return 3") {
-            REQUIRE(3 == lex_extractRanges(&ranges, input.c_str(), input.size()));
+            REQUIRE(3 == prs_extractRanges(&ranges, input.c_str(), input.size()));
 
             AND_THEN("The input pointer should have been modified") {
                 REQUIRE(ranges);
@@ -169,7 +169,7 @@ SCENARIO("A range block ([...]) can contain several ranges", "[lexer]") {
         std::string input = "a-z@-d1-3";
 
         THEN("It should return -1") {
-            REQUIRE(-1 == lex_extractRanges(&ranges, input.c_str(), input.size()));
+            REQUIRE(-1 == prs_extractRanges(&ranges, input.c_str(), input.size()));
 
             AND_THEN("The input pointer should remaiun unchanged (NULL)") {
                 REQUIRE_FALSE(ranges);
@@ -181,7 +181,7 @@ SCENARIO("A range block ([...]) can contain several ranges", "[lexer]") {
         std::string input = "a-zb";
 
         THEN("It should return -1") {
-            REQUIRE(-1 == lex_extractRanges(&ranges, input.c_str(), input.size()));
+            REQUIRE(-1 == prs_extractRanges(&ranges, input.c_str(), input.size()));
 
             AND_THEN("The input pointer should remaiun unchanged (NULL)") {
                 REQUIRE_FALSE(ranges);
@@ -193,7 +193,7 @@ SCENARIO("A range block ([...]) can contain several ranges", "[lexer]") {
     ranges = NULL;
 }
 
-SCENARIO("Items can be extracted from a raw grammar", "[lexer]") {
+SCENARIO("Items can be extracted from a raw grammar", "[parser]") {
     ll_LinkedList itemList;
     ll_createLinkedList(&itemList, (ll_DataDestructor*) free);
 
@@ -202,7 +202,7 @@ SCENARIO("Items can be extracted from a raw grammar", "[lexer]") {
                             "\t| SUB NUMBER \n"
                             "\t| `hello world`;";
 
-        int extractedItems = lex_extractGrammarItems(input.c_str(), input.size(), &itemList);
+        int extractedItems = prs_extractGrammarItems(input.c_str(), input.size(), &itemList);
 
         THEN("9 items should have been extracted") {
             REQUIRE(9 == extractedItems);
@@ -221,7 +221,7 @@ SCENARIO("Items can be extracted from a raw grammar", "[lexer]") {
     ll_freeLinkedList(&itemList, NULL);
 }
 
-SCENARIO("Read a grammar file into a dynamic buffer", "[lexer]") {
+SCENARIO("Read a grammar file into a dynamic buffer", "[parser]") {
     GIVEN("A sample file") {
         FILE *f = fopen("data/test_01.txt", "r");
         REQUIRE(f);
@@ -229,7 +229,7 @@ SCENARIO("Read a grammar file into a dynamic buffer", "[lexer]") {
         GIVEN("A null buffer") {
             char *buffer = NULL;
 
-            ssize_t length = lex_readGrammar(f, &buffer);
+            ssize_t length = prs_readGrammar(f, &buffer);
 
             THEN("The buffer should not be null anymore") {
                 REQUIRE(buffer);
@@ -258,7 +258,7 @@ SCENARIO("Read a grammar file into a dynamic buffer", "[lexer]") {
     }
 }
 
-SCENARIO("Extract tokens and rules from a list of items", "[lexer]") {
+SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
     ll_LinkedList itemList;
     ll_createLinkedList(&itemList, NULL);
 
@@ -268,20 +268,20 @@ SCENARIO("Extract tokens and rules from a list of items", "[lexer]") {
     GIVEN("A list with a valid token and an unknown item") {
         ll_pushBackBatch(&itemList, 6, "TOKEN1", "=", "[a-z]", ";", "`hello`", ";");
 
-        int res = lex_parseGrammarItems(&g, &itemList);
+        int res = prs_parseGrammarItems(&g, &itemList);
 
         THEN("It should return an error") {
-            REQUIRE(LEXER_UNKNOWN_ITEM == res);
+            REQUIRE(PRS_UNKNOWN_ITEM == res);
         }
     }
 
     GIVEN("A list with 1 rule and 1 token") {
         ll_pushBackBatch(&itemList, 8, "TOKEN1", "=", "`hello`", ";", "rule1", "=", "TOKEN1", ";");
 
-        int res = lex_parseGrammarItems(&g, &itemList);
+        int res = prs_parseGrammarItems(&g, &itemList);
 
         THEN("It should return OK") {
-            REQUIRE(LEXER_OK == res);
+            REQUIRE(PRS_OK == res);
         }
 
         AND_THEN("The entry rule should be rule1") {
@@ -295,20 +295,20 @@ SCENARIO("Extract tokens and rules from a list of items", "[lexer]") {
     GIVEN("A list with an invalid token") {
         ll_pushBackBatch(&itemList, 3, "TOKEN1", "=", ";");
 
-        int res = lex_parseGrammarItems(&g, &itemList);
+        int res = prs_parseGrammarItems(&g, &itemList);
 
         THEN("It should return an error") {
-            REQUIRE_FALSE(LEXER_OK == res);
+            REQUIRE_FALSE(PRS_OK == res);
         }
     }
 
     GIVEN("A list with an invalid rule") {
         ll_pushBackBatch(&itemList, 3, "rule", "TOKEN", ";");
 
-        int res = lex_parseGrammarItems(&g, &itemList);
+        int res = prs_parseGrammarItems(&g, &itemList);
 
         THEN("It should return an error") {
-            REQUIRE_FALSE(LEXER_OK == res);
+            REQUIRE_FALSE(PRS_OK == res);
         }
     }
 
@@ -316,7 +316,7 @@ SCENARIO("Extract tokens and rules from a list of items", "[lexer]") {
     ll_freeLinkedList(&itemList, NULL);
 }
 
-SCENARIO("symbols resolution is used to allow recursive rules", "[lexer]") {
+SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
     ll_LinkedList itemList;
     ll_createLinkedList(&itemList, NULL);
 
@@ -326,11 +326,11 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[lexer]") {
     GIVEN("A token that uses an unknown token") {
         ll_pushBackBatch(&itemList, 4, "TOKEN1", "=", "TOKEN2", ";");
 
-        int res = lex_parseGrammarItems(&g, &itemList);
-        REQUIRE(res == LEXER_OK);
+        int res = prs_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == PRS_OK);
 
         WHEN("resolving symbols") {
-            res = lex_resolveSymbols(&g);
+            res = prs_resolveSymbols(&g);
 
             THEN("It should return an error") {
                 REQUIRE(res == FG_UNKNOWN_TOKEN);
@@ -341,11 +341,11 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[lexer]") {
     GIVEN("A rule that uses an unknown rule") {
         ll_pushBackBatch(&itemList, 4, "rule1", "=", "rule2", ";");
 
-        int res = lex_parseGrammarItems(&g, &itemList);
-        REQUIRE(res == LEXER_OK);
+        int res = prs_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == PRS_OK);
 
         WHEN("resolving symbols") {
-            res = lex_resolveSymbols(&g);
+            res = prs_resolveSymbols(&g);
 
             THEN("It should return an error") {
                 REQUIRE(res == FG_UNKNOWN_RULE);
@@ -356,11 +356,11 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[lexer]") {
     GIVEN("A rule that uses an unknown token") {
         ll_pushBackBatch(&itemList, 4, "rule1", "=", "TOKEN1", ";");
 
-        int res = lex_parseGrammarItems(&g, &itemList);
-        REQUIRE(res == LEXER_OK);
+        int res = prs_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == PRS_OK);
 
         WHEN("resolving symbols") {
-            res = lex_resolveSymbols(&g);
+            res = prs_resolveSymbols(&g);
 
             THEN("It should return an error") {
                 REQUIRE(res == FG_UNKNOWN_TOKEN);
@@ -372,14 +372,14 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[lexer]") {
         ll_pushBackBatch(&itemList, 15, "rule1", "=", "rule1", "TOKEN1", "|", "rule2", ";",
                          "TOKEN1", "=", "[a-z]", ";", "rule2", "=", "TOKEN1", ";");
 
-        int res = lex_parseGrammarItems(&g, &itemList);
-        REQUIRE(res == LEXER_OK);
+        int res = prs_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == PRS_OK);
 
         WHEN("resolving symbols") {
-            res = lex_resolveSymbols(&g);
+            res = prs_resolveSymbols(&g);
 
             THEN("It should return OK") {
-                REQUIRE(LEXER_OK == res);
+                REQUIRE(PRS_OK == res);
             }
 
             AND_THEN("Resolution on rule1's production rule should have be done") {
@@ -401,14 +401,14 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[lexer]") {
     GIVEN("Two tokens : one is referencing the other") {
         ll_pushBackBatch(&itemList, 8, "TOKEN1", "=", "TOKEN2", ";", "TOKEN2", "=", "`test`", ";");
 
-        int res = lex_parseGrammarItems(&g, &itemList);
-        REQUIRE(res == LEXER_OK);
+        int res = prs_parseGrammarItems(&g, &itemList);
+        REQUIRE(res == PRS_OK);
 
         WHEN("Resolving symbols") {
-            res = lex_resolveSymbols(&g);
+            res = prs_resolveSymbols(&g);
 
             THEN("It should return ok") {
-                REQUIRE(LEXER_OK == res);
+                REQUIRE(PRS_OK == res);
             }
 
             AND_THEN("TOKEN1 should have a reference on TOKEN2") {

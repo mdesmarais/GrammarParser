@@ -1,42 +1,41 @@
-#ifndef LEXER_LEXER_H
-#define LEXER_LEXER_H
+#ifndef PARSER_H
+#define PARSER_H
 
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
-typedef enum lex_RangeQuantifier {
-    LEX_PLUS_QUANTIFIER,
-    LEX_QMARK_QUANTIFIER
-} lex_RangeQuantifier;
+typedef enum prs_RangeQuantifier {
+    PRS_PLUS_QUANTIFIER,
+    PRS_QMARK_QUANTIFIER
+} prs_RangeQuantifier;
 
-typedef struct lex_Range {
+typedef struct prs_Range {
     bool uppercaseLetter;
     const char *start;
     const char *end;
-    lex_RangeQuantifier quantifier;
-} lex_Range;
+} prs_Range;
 
-typedef enum lex_RetCode {
-    LEXER_OK,
-    LEXER_INVALID_CHAR_RANGE,
-    LEXER_INVALID_RANGE,
-    LEXER_INVALID_RANGE_PATTERN,
+typedef enum prs_RetCode {
+    PRS_OK,
+    PRS_INVALID_CHAR_RANGE,
+    PRS_INVALID_RANGE,
+    PRS_INVALID_RANGE_PATTERN,
 
-    LEXER_UNKNOWN_ITEM
-} lex_RetCode;
+    PRS_UNKNOWN_ITEM
+} prs_RetCode;
 
 struct ll_LinkedList;
 struct ll_Iterator;
 
 struct fg_Grammar;
 
-int lex_createDigitRange(lex_Range *range, char n1, char n2);
-int lex_createLetterRange(lex_Range *range, char c1, char c2, bool uppercase);
-bool lex_matchInRange(lex_Range *range, char c, bool isLetter);
+int prs_createDigitRange(prs_Range *range, char n1, char n2);
+int prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase);
+bool prs_matchInRange(prs_Range *range, char c, bool isLetter);
 
-int lex_extractRange(lex_Range *range, const char *input);
-int lex_extractRanges(lex_Range **pRanges, const char *input, size_t length);
+int prs_extractRange(prs_Range *range, const char *input);
+int prs_extractRanges(prs_Range **pRanges, const char *input, size_t length);
 
 /**
  * Extracts items from a given raw grammar.
@@ -49,11 +48,11 @@ int lex_extractRanges(lex_Range **pRanges, const char *input, size_t length);
  * @param itemList list that will receive extracted items
  * @return number of extracted items
  */
-int lex_extractGrammarItems(const char *source, size_t length, struct ll_LinkedList *itemList);
+int prs_extractGrammarItems(const char *source, size_t length, struct ll_LinkedList *itemList);
 
-int lex_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList);
+int prs_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList);
 
-int lex_resolveSymbols(struct fg_Grammar *g);
+int prs_resolveSymbols(struct fg_Grammar *g);
 
 /**
  * Reads a raw grammar from a stream
@@ -70,7 +69,7 @@ int lex_resolveSymbols(struct fg_Grammar *g);
  * @param pBuffer pointer to a NULL buffer
  * @return length of the extracted content
  */
-ssize_t lex_readGrammar(FILE *stream, char **pBuffer);
+ssize_t prs_readGrammar(FILE *stream, char **pBuffer);
 
 /**
  * Separates items from any delimiter in the given array.
@@ -85,6 +84,6 @@ ssize_t lex_readGrammar(FILE *stream, char **pBuffer);
  * @param delimitersCount number of delimiters in the given array
  * @return number of added elements into the list
  */
-int lex_splitDelimiters(struct ll_Iterator *it, const char *delimiters, size_t delimitersCount);
+int prs_splitDelimiters(struct ll_Iterator *it, const char *delimiters, size_t delimitersCount);
 
-#endif //LEXER_LEXER_H
+#endif // PARSER_H

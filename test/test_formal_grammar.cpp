@@ -62,7 +62,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
 
             REQUIRE(FG_STRING_TOKEN == token.type);
             REQUIRE_THAT("TOKEN", Equals(token.name));
-            REQUIRE(LEX_PLUS_QUANTIFIER == token.quantifier);
+            REQUIRE(PRS_PLUS_QUANTIFIER == token.quantifier);
             REQUIRE_THAT("FUNC", Equals(token.value.string));
         }
     }

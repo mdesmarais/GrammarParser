@@ -1,9 +1,8 @@
-#include "lexer.h"
+#include "parser.h"
 
 #include "formal_grammar.h"
 #include "log.h"
 #include "linked_list.h"
-#include "string_utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +10,7 @@
 
 int main() {
     char *grammarBuffer = NULL;
-    ssize_t grammarSize = lex_readGrammar(stdin, &grammarBuffer);
+    ssize_t grammarSize = prs_readGrammar(stdin, &grammarBuffer);
 
     if (grammarSize == -1) {
         perror("");
@@ -19,17 +18,17 @@ int main() {
 
     ll_LinkedList itemList;
     ll_createLinkedList(&itemList, (ll_DataDestructor*) free);
-    lex_extractGrammarItems(grammarBuffer, grammarSize, &itemList);
+    prs_extractGrammarItems(grammarBuffer, grammarSize, &itemList);
 
     fg_Grammar g;
     fg_createGrammar(&g);
-    int errCode = lex_parseGrammarItems(&g, &itemList);
+    int errCode = prs_parseGrammarItems(&g, &itemList);
 
     if (errCode != FG_OK) {
         log_error("Error during parsing : %d", errCode);
     }
 
-    errCode = lex_resolveSymbols(&g);
+    errCode = prs_resolveSymbols(&g);
 
     if (errCode == FG_OK) {
         log_info("Extracted tokens : %d\nExtracted rules :%d", g.tokens.size, g.rules.size);

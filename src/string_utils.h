@@ -1,5 +1,5 @@
-#ifndef LEXER_STRING_UTILS_H
-#define LEXER_STRING_UTILS_H
+#ifndef STRING_UTILS_H
+#define STRING_UTILS_H
 
 #include <stdio.h>
 #include <string.h>
@@ -64,4 +64,4 @@ size_t str_removeMultipleSpaces(char *dest, const char *source, size_t length);
  */
 int str_splitItems(const char *source, size_t length, struct ll_LinkedList *itemList, char separator);
 
-#endif //LEXER_STRING_UTILS_H
+#endif //STRING_UTILS_H

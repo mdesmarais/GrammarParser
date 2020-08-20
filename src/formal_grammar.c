@@ -82,7 +82,7 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
         struct fg_RangesToken *rangesToken = &token->value.rangesToken;
 
         // lex_extractRanges expects a string without square brackets : [...]
-        int extractedRanges = lex_extractRanges(&rangesToken->ranges, tokenValue + 1, strlen(tokenValue) - 2);
+        int extractedRanges = prs_extractRanges(&rangesToken->ranges, tokenValue + 1, strlen(tokenValue) - 2);
 
         if (extractedRanges <= 0) {
             return -1;
@@ -112,15 +112,15 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
     }
 
     char c = *((char*) ll_iteratorNext(it));
-    lex_RangeQuantifier quantifier = -1;
+    prs_RangeQuantifier quantifier = -1;
 
     switch (c) {
         case '+':
-            quantifier = LEX_PLUS_QUANTIFIER;
+            quantifier = PRS_PLUS_QUANTIFIER;
             expectCharFromIt(it, ';', FG_TOKEN_MISSING_END);
             break;
         case '?':
-            quantifier = LEX_QMARK_QUANTIFIER;
+            quantifier = PRS_QMARK_QUANTIFIER;
             expectCharFromIt(it, ';', FG_TOKEN_MISSING_END);
             break;
         case ';':

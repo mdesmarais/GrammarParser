@@ -1,8 +1,8 @@
-#ifndef LEXER_FORMAL_GRAMMAR_H
-#define LEXER_FORMAL_GRAMMAR_H
+#ifndef FORMAL_GRAMMAR_H
+#define FORMAL_GRAMMAR_H
 
 #include "hash_table.h"
-#include "lexer.h"
+#include "parser.h"
 #include "linked_list.h"
 
 #include <string.h>
@@ -14,7 +14,7 @@ typedef enum fg_TokenType {
 } fg_TokenType;
 
 struct fg_RangesToken {
-    lex_Range *ranges;
+    prs_Range *ranges;
     size_t rangesNumber;
 };
 
@@ -34,7 +34,7 @@ union fg_TokenValue {
 typedef struct fg_Token {
     fg_TokenType type;
     char *name;
-    lex_RangeQuantifier quantifier;
+    prs_RangeQuantifier quantifier;
     union fg_TokenValue value;
 } fg_Token;
 
@@ -119,4 +119,4 @@ int fg_extractPrItem(fg_PRItem *prItem, const char *item);
 
 void fg_freePrItem(fg_PRItem *prItem);
 
-#endif //LEXER_FORMAL_GRAMMAR_H
+#endif //FORMAL_GRAMMAR_H
