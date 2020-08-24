@@ -17,20 +17,20 @@ int main() {
     }
 
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, (ll_DataDestructor*) free);
+    ll_createLinkedList(&itemList, (ll_DataDestructor *) prs_freeStringItem);
     prs_extractGrammarItems(grammarBuffer, grammarSize, &itemList);
 
     fg_Grammar g;
     fg_createGrammar(&g);
     int errCode = prs_parseGrammarItems(&g, &itemList);
 
-    if (errCode != FG_OK) {
+    if (errCode != PRS_OK) {
         log_error("Error during parsing : %d", errCode);
     }
 
     errCode = prs_resolveSymbols(&g);
 
-    if (errCode == FG_OK) {
+    if (errCode == PRS_OK) {
         log_info("Extracted tokens : %d\nExtracted rules :%d", g.tokens.size, g.rules.size);
     }
     else {

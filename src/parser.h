@@ -5,6 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef struct prs_StringItem {
+    char *item;
+    int line;
+    int column;
+} prs_StringItem;
+
 typedef enum prs_RangeQuantifier {
     PRS_PLUS_QUANTIFIER,
     PRS_QMARK_QUANTIFIER
@@ -16,26 +22,44 @@ typedef struct prs_Range {
     const char *end;
 } prs_Range;
 
-typedef enum prs_RetCode {
+typedef enum prs_ErrCode {
     PRS_OK,
     PRS_INVALID_CHAR_RANGE,
     PRS_INVALID_RANGE,
     PRS_INVALID_RANGE_PATTERN,
 
-    PRS_UNKNOWN_ITEM
-} prs_RetCode;
+    FG_TOKEN_INVALID,
+    FG_TOKEN_MISSING_END,
+    FG_TOKEN_MISSING_VALUE,
+    FG_TOKEN_INVALID_VALUE,
+    FG_TOKEN_UNKNOWN_VALUE_TYPE,
+    FG_TOKEN_SELF_REF,
+
+    FG_RULE_EMPTY,
+    FG_RULE_INVALID,
+    FG_RULE_MISSING_END,
+    FG_RULE_MISSING_VALUE,
+
+    FG_UNKNOWN_TOKEN,
+    FG_UNKNOWN_RULE,
+    PRS_UNKNOWN_ITEM,
+
+    FG_PR_EMPTY,
+
+    FG_PRITEM_UNKNOWN_TYPE
+} prs_ErrCode;
 
 struct ll_LinkedList;
 struct ll_Iterator;
 
 struct fg_Grammar;
 
-int prs_createDigitRange(prs_Range *range, char n1, char n2);
-int prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase);
+prs_ErrCode prs_createDigitRange(prs_Range *range, char n1, char n2);
+prs_ErrCode prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase);
 bool prs_matchInRange(prs_Range *range, char c, bool isLetter);
 
-int prs_extractRange(prs_Range *range, const char *input);
-int prs_extractRanges(prs_Range **pRanges, const char *input, size_t length);
+prs_ErrCode prs_extractRange(prs_Range *range, const char *input);
+prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t length);
 
 /**
  * Extracts items from a given raw grammar.
@@ -50,9 +74,11 @@ int prs_extractRanges(prs_Range **pRanges, const char *input, size_t length);
  */
 int prs_extractGrammarItems(const char *source, size_t length, struct ll_LinkedList *itemList);
 
-int prs_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList);
+void prs_freeStringItem(prs_StringItem *stringItem);
 
-int prs_resolveSymbols(struct fg_Grammar *g);
+prs_ErrCode prs_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList);
+
+prs_ErrCode prs_resolveSymbols(struct fg_Grammar *g);
 
 /**
  * Reads a raw grammar from a stream
@@ -63,7 +89,7 @@ int prs_resolveSymbols(struct fg_Grammar *g);
  *
  * The caller has the responsability of freeing this buffer.
  *
- * If an allocation error occured, then -1 will be returned.
+ * If an allocation error occurs, then -1 will be returned.
  *
  * @param stream input stream
  * @param pBuffer pointer to a NULL buffer

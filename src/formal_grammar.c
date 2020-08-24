@@ -41,12 +41,12 @@ void fg_freeGrammar(fg_Grammar *g) {
 }
 
 #define expectCharFromIt(it, expected, ret) do { \
-    if (!ll_iteratorHasNext((it)) || *((char*) ll_iteratorNext((it))) != (expected)) { \
+    if (!ll_iteratorHasNext((it)) || *((prs_StringItem*) ll_iteratorNext((it)))->item != (expected)) { \
         return (ret);                                   \
     }                                                   \
 } while(0);
 
-int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
+prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
     assert(token);
     assert(it);
     assert(tokenName);
@@ -61,7 +61,8 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
         return FG_TOKEN_MISSING_VALUE;
     }
 
-    char *tokenValue = ll_iteratorNext((it));
+    prs_StringItem *tokenValueItem = ll_iteratorNext((it));
+    char *tokenValue = tokenValueItem->item;
 
     if (*tokenValue == ';') {
         fg_freeToken(token);
@@ -111,7 +112,7 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
         return FG_TOKEN_MISSING_END;
     }
 
-    char c = *((char*) ll_iteratorNext(it));
+    char c = *((prs_StringItem *) ll_iteratorNext(it))->item;
     prs_RangeQuantifier quantifier = -1;
 
     switch (c) {
@@ -134,7 +135,7 @@ int fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
         token->quantifier = quantifier;
     }
 
-    return FG_OK;
+    return PRS_OK;
 }
 
 void fg_freeToken(fg_Token *token) {
@@ -165,7 +166,7 @@ static void prItemDestructor(void *data, void *args) {
     free(prItem);
 }
 
-int fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName) {
+prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName) {
     assert(rule);
     assert(it);
     assert(ruleName);
@@ -179,7 +180,8 @@ int fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName) {
     int extractedProductionRules = 0;
 
     while (ll_iteratorHasNext(it)) {
-        char *currentItem = ll_iteratorNext(it);
+        prs_StringItem *currentStringItem = ll_iteratorNext(it);
+        char *currentItem = currentStringItem->item;
 
         if (*currentItem == ';') {
             hasEnd = true;
@@ -192,7 +194,7 @@ int fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName) {
         char *lastItem = NULL;
         int errCode = fg_extractProductionRule(productionRule, it, currentItem, &lastItem);
 
-        if (errCode != FG_OK) {
+        if (errCode != PRS_OK) {
             free(productionRule);
             fg_freeRule(rule);
             return errCode;
@@ -217,7 +219,7 @@ int fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName) {
         return FG_RULE_MISSING_END;
     }
 
-    return FG_OK;
+    return PRS_OK;
 }
 
 static void productionRuleDestructor(ll_LinkedList *pr) {
@@ -239,7 +241,7 @@ void fg_freeRule(fg_Rule *rule) {
     }
 }
 
-int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, char *currentItem, char **pLastItem) {
+prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, char *currentItem, char **pLastItem) {
     assert(prItemList);
     assert(it);
     assert(currentItem);
@@ -261,7 +263,7 @@ int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, char *c
 
         int errCode = fg_extractPrItem(prItem, item);
 
-        if (errCode != FG_OK) {
+        if (errCode != PRS_OK) {
             ll_freeLinkedList(prItemList, NULL);
             free(prItem);
             return errCode;
@@ -269,7 +271,7 @@ int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, char *c
 
         ll_pushBack(prItemList, prItem);
         ++extractedItems;
-    } while (ll_iteratorHasNext(it) && (item = ll_iteratorNext(it)));
+    } while (ll_iteratorHasNext(it) && (item = ((prs_StringItem*) ll_iteratorNext(it))->item));
 
     if (extractedItems == 0) {
         return FG_PR_EMPTY;
@@ -277,10 +279,10 @@ int fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, char *c
 
     *pLastItem = lastItem;
 
-    return FG_OK;
+    return PRS_OK;
 }
 
-int fg_extractPrItem(fg_PRItem *prItem, const char *item) {
+prs_ErrCode fg_extractPrItem(fg_PRItem *prItem, const char *item) {
     assert(prItem);
     assert(item);
 
@@ -294,7 +296,7 @@ int fg_extractPrItem(fg_PRItem *prItem, const char *item) {
 
     prItem->type = (islower(*item)) ? FG_RULE_ITEM : FG_TOKEN_ITEM;
 
-    return FG_OK;
+    return PRS_OK;
 }
 
 void fg_freePrItem(fg_PRItem *prItem) {

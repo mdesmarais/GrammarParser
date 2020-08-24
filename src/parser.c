@@ -13,7 +13,7 @@
 static const char DIGITS[] = { "0123456789" };
 static const char LETTERS[] = { "abcdefghijklmnopqrstuvwxyz" };
 
-static int createRange(prs_Range *range, char x, char y, const char *seq) {
+static prs_ErrCode createRange(prs_Range *range, char x, char y, const char *seq) {
     assert(range);
     assert(seq);
 
@@ -34,13 +34,13 @@ static int createRange(prs_Range *range, char x, char y, const char *seq) {
     return PRS_OK;
 }
 
-int prs_createDigitRange(prs_Range *range, char n1, char n2) {
+prs_ErrCode prs_createDigitRange(prs_Range *range, char n1, char n2) {
     assert(range);
 
     return createRange(range, n1, n2, DIGITS);
 }
 
-int prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase) {
+prs_ErrCode prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase) {
     assert(range);
 
     range->uppercaseLetter = uppercase;
@@ -65,7 +65,7 @@ int prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase) {
     return false;
 } */
 
-int prs_extractRange(prs_Range *range, const char *input) {
+prs_ErrCode prs_extractRange(prs_Range *range, const char *input) {
     assert(range);
     assert(input);
 
@@ -88,7 +88,7 @@ int prs_extractRange(prs_Range *range, const char *input) {
     }
 }
 
-int prs_extractRanges(prs_Range **pRanges, const char *input, size_t length) {
+prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t length) {
     assert(pRanges);
     assert(input);
 
@@ -136,11 +136,43 @@ int prs_extractRanges(prs_Range **pRanges, const char *input, size_t length) {
     return i;
 }
 
+/**
+ * Splits a string into prs_StringItem items and inserts them
+ * into the given linked list.
+ *
+ * @param dest a pointer to a linked list
+ * @param source the string to split
+ * @param length length of the given string
+ * @return number of extracted items or -1 if an error occurs
+ */
+static int splitItems(ll_LinkedList *dest, const char *source, size_t length) {
+    ll_LinkedList rawItemList;
+    ll_createLinkedList(&rawItemList, NULL);
+
+    int result = str_splitItems(source, length, &rawItemList, ' ');
+
+    ll_Iterator it = ll_createIterator(&rawItemList);
+
+    while (ll_iteratorHasNext(&it)) {
+        char *item = ll_iteratorNext(&it);
+
+        prs_StringItem *stringItem = malloc(sizeof(*stringItem));
+        stringItem->item = item;
+        stringItem->line = stringItem->column;
+
+        ll_pushBack(dest, stringItem);
+    }
+
+    ll_freeLinkedList(&rawItemList, NULL);
+
+    return result;
+}
+
 int prs_extractGrammarItems(const char *source, size_t length, ll_LinkedList *itemList) {
     assert(source);
     assert(itemList);
 
-    // This buffer will hold
+    // This buffer will hold a copy of the source
     char *buffer = malloc(length);
 
     if (!buffer) {
@@ -153,7 +185,6 @@ int prs_extractGrammarItems(const char *source, size_t length, ll_LinkedList *it
     while (sourcePos < length) {
         *buffer = '\0';
         const char *currentPosPtr = source + sourcePos;
-        //log_debug("loop, pos=%ld str=%s", pos, target);
 
         // Looking for a string block, we don't want to remove any spaces from it
         char *startBlockPos = memchr(currentPosPtr, '`', length - sourcePos);
@@ -170,7 +201,7 @@ int prs_extractGrammarItems(const char *source, size_t length, ll_LinkedList *it
             if (currentPosPtr != startBlockPos) {
                 size_t blockLength = str_removeMultipleSpaces(buffer, currentPosPtr, startBlockPos - currentPosPtr);
 
-                int result = str_splitItems(buffer, blockLength, itemList, ' ');
+                int result = splitItems(itemList, buffer, blockLength);
 
                 if (result == -1) {
                     log_error("Items extraction failed (1)");
@@ -190,7 +221,11 @@ int prs_extractGrammarItems(const char *source, size_t length, ll_LinkedList *it
                 stringBlock[stringBlockLength] = '\0';
                 memcpy(stringBlock, startBlockPos, stringBlockLength);
 
-                ll_pushBack(itemList, stringBlock);
+                prs_StringItem *stringItem = malloc(sizeof(*stringItem));
+                stringItem->item = stringBlock;
+                stringItem->line = stringItem->column = -1;
+
+                ll_pushBack(itemList, stringItem);
                 extractedItems += 1;
             }
 
@@ -199,7 +234,8 @@ int prs_extractGrammarItems(const char *source, size_t length, ll_LinkedList *it
         }
         else {
             ssize_t blockSize = str_removeMultipleSpaces(buffer, currentPosPtr, strlen(currentPosPtr));
-            int result = str_splitItems(buffer, blockSize, itemList, ' ');
+
+            int result = splitItems(itemList, buffer, blockSize);
 
             if (result == -1) {
                 log_error("Items extraction failed (2)");
@@ -266,7 +302,14 @@ ssize_t prs_readGrammar(FILE *stream, char **pBuffer) {
     return pos;
 }
 
-int prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
+void prs_freeStringItem(prs_StringItem *stringItem) {
+    if (stringItem) {
+        free(stringItem->item);
+        free(stringItem);
+    }
+}
+
+prs_ErrCode prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
     assert(g);
     assert(itemList);
 
@@ -274,22 +317,22 @@ int prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
     fg_Rule *entryRule = NULL;
 
     while (ll_iteratorHasNext(&it)) {
-        char *item = ll_iteratorNext(&it);
+        prs_StringItem *stringItem = ll_iteratorNext(&it);
 
-        if (!isalpha(*item)) {
+        if (!isalpha(*stringItem->item)) {
             // error
-            log_error("unknown item %s", item);
+            log_error("unknown item %s", stringItem);
             return PRS_UNKNOWN_ITEM;
         }
 
-        if (isupper(*item)) {
+        if (isupper(*stringItem->item)) {
             // it should be a token
             fg_Token *token = malloc(sizeof(*token));
             memset(token, 0, sizeof(*token));
 
-            int errCode = fg_extractToken(token, &it, item);
+            int errCode = fg_extractToken(token, &it, stringItem->item);
 
-            if (errCode != FG_OK) {
+            if (errCode != PRS_OK) {
                 fg_freeToken(token);
                 free(token);
                 log_error("Token extraction error");
@@ -303,9 +346,9 @@ int prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
             fg_Rule *rule = malloc(sizeof(*rule));
             fg_createRule(rule);
 
-            int errCode = fg_extractRule(rule, &it, item);
+            int errCode = fg_extractRule(rule, &it, stringItem->item);
 
-            if (errCode != FG_OK) {
+            if (errCode != PRS_OK) {
                 fg_freeRule(rule);
                 free(rule);
                 log_error("Rule extraction error");
@@ -366,7 +409,7 @@ static void resolveProductionRulesSymbols(void *data, void *args) {
     }
 }
 
-int prs_resolveSymbols(fg_Grammar *g) {
+prs_ErrCode prs_resolveSymbols(fg_Grammar *g) {
     ht_Iterator tokensIt;
     ht_createIterator(&tokensIt, &g->tokens);
 
@@ -390,7 +433,7 @@ int prs_resolveSymbols(fg_Grammar *g) {
         }
     }
 
-    struct ResolverArg resolverArg = { .g = g, .errCode = FG_OK };
+    struct ResolverArg resolverArg = { .g = g, .errCode = PRS_OK };
 
     while (ht_iteratorHasNext(&rulesIt)) {
         ht_KVPair *pair = ht_iteratorNext(&rulesIt);
@@ -400,7 +443,7 @@ int prs_resolveSymbols(fg_Grammar *g) {
 
         ll_forEachItem(&rule->productionRuleList, resolveProductionRulesSymbols, &resolverArg);
 
-        if (resolverArg.errCode != FG_OK) {
+        if (resolverArg.errCode != PRS_OK) {
             return resolverArg.errCode;
         }
     }
@@ -415,7 +458,8 @@ int prs_splitDelimiters(ll_Iterator *it, const char *delimiters) {
     int extractedItems = 0;
 
     while (ll_iteratorHasNext(it)) {
-        char *item = ll_iteratorNext(it);
+        prs_StringItem *stringItem = ll_iteratorNext(it);
+        char *item = stringItem->item;
 
         if (*item == '`') {
             // If the item is a string block then it does not
@@ -440,8 +484,12 @@ int prs_splitDelimiters(ll_Iterator *it, const char *delimiters) {
             memcpy(newItem, ptr, length);
             newItem[length] = '\0';
 
+            prs_StringItem *stringItem = malloc(sizeof(*stringItem));
+            stringItem->item = newItem;
+            stringItem->column = stringItem->line = -1;
+
             // Inserts the new item into the list right after the current item
-            ll_iteratorInsert(it, newItem);
+            ll_iteratorInsert(it, stringItem);
 
             // Adds a null character at the position of the delimiter
             // We only keep the part that is before the delimiter

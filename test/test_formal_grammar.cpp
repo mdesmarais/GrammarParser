@@ -1,5 +1,7 @@
 #include <catch2/catch.hpp>
 
+#include "helpers.hpp"
+
 extern "C" {
 #include <formal_grammar.h>
 #include <linked_list.h>
@@ -9,56 +11,56 @@ using Catch::Matchers::Equals;
 
 SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, NULL);
+    ll_createLinkedList(&itemList, (ll_DataDestructor*) prs_freeStringItem);
     fg_Token token = {};
 
     GIVEN("A token without a value") {
-        ll_pushBackBatch(&itemList, 3, "TOKEN", "=", ";");
+        fillItemList(&itemList, { "TOKEN", "=", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractToken(&token, &it, (const char *) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, (const char *) nextStringItem(&it));
             REQUIRE(FG_TOKEN_MISSING_VALUE == res);
         }
     }
 
     GIVEN("A token without the ending semicolon") {
-        ll_pushBackBatch(&itemList, 3, "TOKEN", "=", "`FUNC`");
+        fillItemList(&itemList, { "TOKEN", "=", "FUNC" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractToken(&token, &it, (const char *) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, (const char *) nextStringItem(&it));
             REQUIRE(FG_TOKEN_MISSING_END == res);
         }
     }
 
     GIVEN("A token without the equal sign (token name directly followed by its value") {
-        ll_pushBackBatch(&itemList, 3, "TOKEN", "`FUNC`", ";");
+        fillItemList(&itemList, { "TOKEN", "`FUNC`", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractToken(&token, &it, (const char *) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, (const char *) nextStringItem(&it));
             REQUIRE(FG_TOKEN_INVALID == res);
         }
     }
 
     GIVEN("A token without more items than its name") {
-        ll_pushBackBatch(&itemList, 1, "TOKEN");
+        fillItemList(&itemList, { "TOKEN" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractToken(&token, &it, (const char *) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, (const char *) nextStringItem(&it));
             REQUIRE(FG_TOKEN_INVALID == res);
         }
     }
 
     GIVEN("A valid string token with a quantifier") {
-        ll_pushBackBatch(&itemList, 5, "TOKEN", "=", "`FUNC`", "+", ";");
+        fillItemList(&itemList, { "TOKEN", "=", "`FUNC`", "+", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return ok and the token structure should have been updated") {
-            int res = fg_extractToken(&token, &it, (const char *) ll_iteratorNext(&it));
-            REQUIRE(FG_OK == res);
+            int res = fg_extractToken(&token, &it, (const char *) nextStringItem(&it));
+            REQUIRE(PRS_OK == res);
 
             REQUIRE(FG_STRING_TOKEN == token.type);
             REQUIRE_THAT("TOKEN", Equals(token.name));
@@ -68,12 +70,12 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     GIVEN("A valid range token with 2 ranges") {
-        ll_pushBackBatch(&itemList, 4, "TOKEN", "=", "[a-z2-4]", ";");
+        fillItemList(&itemList, { "TOKEN", "=", "[a-z2-4]", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return OK") {
-            int res = fg_extractToken(&token, &it, (const char *) ll_iteratorNext(&it));
-            REQUIRE(FG_OK == res);
+            int res = fg_extractToken(&token, &it, (const char *) nextStringItem(&it));
+            REQUIRE(PRS_OK == res);
 
             AND_THEN("ranges pointer in token structure should have been updated") {
                 struct fg_RangesToken *rangesToken = &token.value.rangesToken;
@@ -84,23 +86,23 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     GIVEN("A token with a self reference") {
-        ll_pushBackBatch(&itemList, 4, "TOKEN", "=", "TOKEN", ";");
+        fillItemList(&itemList, { "TOKEN", "=", "TOKEN", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractToken(&token, &it, (const char *) ll_iteratorNext(&it));
+            int res = fg_extractToken(&token, &it, (const char *) nextStringItem(&it));
             REQUIRE(FG_TOKEN_SELF_REF == res);
         }
     }
 
     GIVEN("A token with a ref on another token") {
-        ll_pushBackBatch(&itemList, 5, "TOKEN", "=", "TOKEN2", "?", ";");
+        fillItemList(&itemList, { "TOKEN", "=", "TOKEN2", "?", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
-        int res = fg_extractToken(&token, &it, (const char *) ll_iteratorNext(&it));
+        int res = fg_extractToken(&token, &it, (const char *) nextStringItem(&it));
 
         THEN("It should return ok") {
-            REQUIRE(FG_OK == res);
+            REQUIRE(PRS_OK == res);
         }
 
         AND_THEN("The token type should be a ref") {
@@ -118,7 +120,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
 
 SCENARIO("A PRItem is either a reference to token or a rule", "[formal_grammar]") {
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, NULL);
+    ll_createLinkedList(&itemList, (ll_DataDestructor*) free);
 
     fg_PRItem item = {};
     memset(&item, 0, sizeof(item));
@@ -136,7 +138,7 @@ SCENARIO("A PRItem is either a reference to token or a rule", "[formal_grammar]"
         int res = fg_extractPrItem(&item, rule.c_str());
 
         THEN("It should return OK") {
-            REQUIRE(FG_OK == res);
+            REQUIRE(PRS_OK == res);
         }
 
         AND_THEN("The item's type should be a rule") {
@@ -153,7 +155,7 @@ SCENARIO("A PRItem is either a reference to token or a rule", "[formal_grammar]"
         int res = fg_extractPrItem(&item, token.c_str());
 
         THEN("It should return OK") {
-            REQUIRE(FG_OK == res);
+            REQUIRE(PRS_OK == res);
         }
 
         AND_THEN("The item's type should be a token") {
@@ -177,20 +179,20 @@ static void prItemDestructor(void *data, void *args) {
 
 SCENARIO("A production rule is made by one or more items (token or rule)", "[formal_grammar]") {
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, NULL);
+    ll_createLinkedList(&itemList, (ll_DataDestructor*) prs_freeStringItem);
 
     ll_LinkedList productionRule;
     ll_createLinkedList(&productionRule, prItemDestructor);
 
     GIVEN("An iterator on a valid production rule items") {
-        ll_pushBackBatch(&itemList, 3, "rule1", "TOKEN1", "|");
+        fillItemList(&itemList, { "rule1", "TOKEN1", "|" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return OK") {
             char *lastItem = NULL;
-            int res = fg_extractProductionRule(&productionRule, &it, (char *) ll_iteratorNext(&it), &lastItem);
+            int res = fg_extractProductionRule(&productionRule, &it, (char *) nextStringItem(&it), &lastItem);
 
-            REQUIRE(FG_OK == res);
+            REQUIRE(PRS_OK == res);
 
             AND_THEN("The production rule should contain 2 items") {
                 REQUIRE(2 == productionRule.size);
@@ -204,12 +206,12 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
     }
 
     GIVEN("An iterator on non valid production rule items") {
-        ll_pushBackBatch(&itemList, 3, "rule1", "()()", "|");
+        fillItemList(&itemList, { "rule1", "()()", "|" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
             char *lastItem = NULL;
-            int res = fg_extractProductionRule(&productionRule, &it, (char *) ll_iteratorNext(&it), &lastItem);
+            int res = fg_extractProductionRule(&productionRule, &it, (char *) nextStringItem(&it), &lastItem);
 
             REQUIRE(FG_PRITEM_UNKNOWN_TYPE == res);
 
@@ -224,12 +226,12 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
     }
 
     GIVEN("An iterator on an empty production rule") {
-        ll_pushBackBatch(&itemList, 1, "|");
+        fillItemList(&itemList, { "|" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
             char *lastItem = NULL;
-            int res = fg_extractProductionRule(&productionRule, &it, (char *) ll_iteratorNext(&it), &lastItem);
+            int res = fg_extractProductionRule(&productionRule, &it, (char *) nextStringItem(&it), &lastItem);
 
             REQUIRE(FG_PR_EMPTY == res);
 
@@ -245,38 +247,38 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
 
 SCENARIO("A rule is made by one or more rules separated by a pipe and ends with a semicolon", "[formal_grammar]") {
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, NULL);
+    ll_createLinkedList(&itemList, (ll_DataDestructor*) prs_freeStringItem);
 
     fg_Rule rule;
     fg_createRule(&rule);
 
     GIVEN("An iterator on a rule without the end marker") {
-        ll_pushBackBatch(&itemList, 3, "basic_rule", "=", "rule1");
+        fillItemList(&itemList, { "basic_rule", "=", "rule1" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractRule(&rule, &it, (char *) ll_iteratorNext(&it));
+            int res = fg_extractRule(&rule, &it, (char *) nextStringItem(&it));
             REQUIRE(FG_RULE_MISSING_END == res);
         }
     }
 
     GIVEN("An iterator on an empty rule") {
-        ll_pushBackBatch(&itemList, 3, "basic_rule", "=", ";");
+        fillItemList(&itemList, { "basic_rule", "=", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            int res = fg_extractRule(&rule, &it, (char *) ll_iteratorNext(&it));
+            int res = fg_extractRule(&rule, &it, (char *) nextStringItem(&it));
             REQUIRE(FG_RULE_EMPTY == res);
         }
     }
 
     GIVEN("An iterator on a two production rules") {
-        ll_pushBackBatch(&itemList, 6, "basic_rule", "=", "rule1", "|", "TOKEN1", ";");
+        fillItemList(&itemList, { "basic_rule", "=", "rule1", "|", "TOKEN1", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return OK") {
-            int res = fg_extractRule(&rule, &it, (char *) ll_iteratorNext(&it));
-            REQUIRE(FG_OK == res);
+            int res = fg_extractRule(&rule, &it, (char *) nextStringItem(&it));
+            REQUIRE(PRS_OK == res);
         }
     }
 
