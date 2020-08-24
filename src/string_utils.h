@@ -7,19 +7,6 @@
 struct ll_LinkedList;
 
 /**
- * Searches for the first occurence of any character in the given delimiter list.
- *
- * It no delimiter has beeen found, then NULL will be returned.
- *
- * @param source
- * @param length length of the given string
- * @param delimiters list of delimiters (1 char)
- * @param delimitersNumber number of delimiters
- * @return pointer to the first occurence of a delimiter, or NULL
- */
-char *str_findDelimiter(const char *source, size_t length, const char *delimiters, size_t delimitersNumber);
-
-/**
  * Removes all whitespaces from a given source string.
  *
  * The result will be written into the destination ptr.

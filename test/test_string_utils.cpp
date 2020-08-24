@@ -9,28 +9,6 @@ extern "C" {
 
 using Catch::Matchers::Equals;
 
-SCENARIO("Gets pointer of a delimiter from a list in a given string", "[string_utils]") {
-    std::string delimiters = "+-";
-
-    GIVEN("A string without any of given delimiters") {
-        std::string input = "hello world";
-
-        THEN("It should return a null pointer") {
-            REQUIRE_FALSE(str_findDelimiter(input.c_str(), input.size(), delimiters.c_str(), delimiters.size()));
-        }
-    }
-
-    GIVEN("A string with 2 of given delimiters") {
-        std::string input = "hello+worl-d";
-
-        THEN("it should return pointer on the '+' char") {
-            const char *expected = input.c_str() + 5;
-            char *res = str_findDelimiter(input.c_str(), input.size(), delimiters.c_str(), delimiters.size());
-            REQUIRE(expected == res);
-        }
-    }
-}
-
 SCENARIO("Removes all whitespaces from a given string", "[string_utils]") {
     GIVEN("A string full of whitespaces") {
         std::string input = "     ";

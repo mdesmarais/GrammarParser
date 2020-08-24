@@ -72,18 +72,19 @@ int prs_resolveSymbols(struct fg_Grammar *g);
 ssize_t prs_readGrammar(FILE *stream, char **pBuffer);
 
 /**
- * Separates items from any delimiter in the given array.
+ * Separates items from any delimiter in the given string.
  *
  * Example : RULE= -> will be separated into 2 items : RULE, =
  * Separated items (ex: =) will be added into the list with
  * the given iterator. They will be placed between the original item
  * and the next one. The list order will be preserved.
  *
+ * The delimiters string must be null terminated.
+ *
  * @param it iterator on the item list
- * @param delimiters array of delimiters
- * @param delimitersCount number of delimiters in the given array
+ * @param delimiters string of delimiters
  * @return number of added elements into the list
  */
-int prs_splitDelimiters(struct ll_Iterator *it, const char *delimiters, size_t delimitersCount);
+int prs_splitDelimiters(struct ll_Iterator *it, const char *delimiters);
 
 #endif // PARSER_H

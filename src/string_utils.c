@@ -6,21 +6,6 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-char *str_findDelimiter(const char *source, size_t length, const char *delimiters, size_t delimitersNumber) {
-    assert(source);
-    assert(delimiters);
-
-    for (size_t i = 0;i < length;++i) {
-        for (size_t j = 0;j < delimitersNumber;++j) {
-            if (source[i] == delimiters[j]) {
-                return (char*) source + i;
-            }
-        }
-    }
-
-    return NULL;
-}
-
 size_t str_removeWhitespaces(char *dest, const char *source, size_t length) {
     assert(dest);
     assert(source);

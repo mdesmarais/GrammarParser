@@ -215,7 +215,7 @@ int prs_extractGrammarItems(const char *source, size_t length, ll_LinkedList *it
 
     const char *delimiters = "+|?;=";
     ll_Iterator it = ll_createIterator(itemList);
-    int pwet = prs_splitDelimiters(&it, delimiters, strlen(delimiters));
+    int pwet = prs_splitDelimiters(&it, delimiters);
 
     return extractedItems + pwet;
 }
@@ -408,7 +408,7 @@ int prs_resolveSymbols(fg_Grammar *g) {
     return PRS_OK;
 }
 
-int prs_splitDelimiters(ll_Iterator *it, const char *delimiters, size_t delimitersCount) {
+int prs_splitDelimiters(ll_Iterator *it, const char *delimiters) {
     assert(it);
     assert(delimiters);
 
@@ -423,7 +423,7 @@ int prs_splitDelimiters(ll_Iterator *it, const char *delimiters, size_t delimite
             continue;
         }
 
-        char *ptr = str_findDelimiter(item, strlen(item), delimiters, delimitersCount);
+        char *ptr = strpbrk(item, delimiters);
 
         if (ptr && strlen(item) > 1) {
             // A 1-char length item does not require to be splitted
