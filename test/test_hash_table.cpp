@@ -9,7 +9,7 @@ SCENARIO("A hash table is created with an initial capacity", "[hash_table]") {
     ht_Table table = {};
 
     GIVEN("A capacity of 5") {
-        bool res = ht_createTable(&table, 5, ht_hashString, NULL, NULL);
+        bool res = ht_createTable(&table, 5, ht_hashString, nullptr, nullptr);
 
         THEN("It should return true") {
             REQUIRE(res);
@@ -32,8 +32,7 @@ SCENARIO("A hash table is created with an initial capacity", "[hash_table]") {
     ht_freeTable(&table);
 }
 
-static uint32_t constantHash(const void *data) {
-    data;
+static uint32_t constantHash() {
     return 0;
 }
 
@@ -48,7 +47,7 @@ static int intKeyComparator(const void *d1, const void *d2) {
 SCENARIO("Pair insertion with hash collision", "[hash_table]") {
     GIVEN("An hash table with one element and a constant hash function") {
         ht_Table table = {};
-        ht_createTable(&table, 10, constantHash, intKeyComparator, NULL);
+        ht_createTable(&table, 10, (ht_HashFunction*) constantHash, intKeyComparator, nullptr);
 
         int k1 = 1;
         int v1 = 38;
@@ -97,7 +96,7 @@ SCENARIO("Pair insertion with hash collision", "[hash_table]") {
 SCENARIO("A value can be retrieved by its key", "[hash_table]") {
     GIVEN("An hash table with 3 pairs") {
         ht_Table table = {};
-        ht_createTable(&table, 10, intHash, intKeyComparator, NULL);
+        ht_createTable(&table, 10, intHash, intKeyComparator, nullptr);
 
         int k1 = 1;
         int v1 = 84;
@@ -134,7 +133,7 @@ SCENARIO("A value can be retrieved by its key", "[hash_table]") {
 SCENARIO("A pair can be removed by its key", "[hash_table]") {
     GIVEN("An hash table with one pair") {
         ht_Table table = {};
-        ht_createTable(&table, 10, intHash, intKeyComparator, NULL);
+        ht_createTable(&table, 10, intHash, intKeyComparator, nullptr);
 
         int k1 = 1;
         int v1 = 45;
@@ -154,7 +153,7 @@ SCENARIO("A pair can be removed by its key", "[hash_table]") {
 
 SCENARIO("Items in table can be retrieved individually with an iterator", "[hash_table]") {
     ht_Table table;
-    ht_createTable(&table, 6, intHash, intKeyComparator, NULL);
+    ht_createTable(&table, 6, intHash, intKeyComparator, nullptr);
 
     GIVEN("An empty map") {
         ht_Iterator it;

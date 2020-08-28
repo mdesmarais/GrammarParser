@@ -1,7 +1,5 @@
 #include "formal_grammar.h"
 
-#include "log.h"
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
@@ -44,7 +42,7 @@ void fg_freeGrammar(fg_Grammar *g) {
     if (!ll_iteratorHasNext((it)) || *((prs_StringItem*) ll_iteratorNext((it)))->item != (expected)) { \
         return (ret);                                   \
     }                                                   \
-} while(0);
+} while(0)
 
 prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, prs_StringItem *tokenNameItem) {
     assert(token);

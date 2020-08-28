@@ -10,26 +10,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static const char DIGITS[] = { "0123456789" };
-static const char LETTERS[] = { "abcdefghijklmnopqrstuvwxyz" };
-
-static prs_ErrCode createRange(prs_Range *range, char x, char y, const char *seq) {
+static prs_ErrCode createRange(prs_Range *range, uint8_t x, uint8_t y, uint8_t asciiStart, uint8_t asciiEnd) {
     assert(range);
-    assert(seq);
 
-    const char *start = strchr(seq, x);
-    const char *end = strchr(seq, y);
-
-    if (!start || !end) {
-        return PRS_INVALID_CHAR_RANGE;
-    }
-
-    if (start > end) {
+    if (x > y) {
         return PRS_INVALID_RANGE;
     }
 
-    range->start = start;
-    range->end = end + 1;
+    if (x < asciiStart || y > asciiEnd) {
+        return PRS_INVALID_CHAR_RANGE;
+    }
+
+    range->start = x;
+    range->end = y + 1;
 
     return PRS_OK;
 }
@@ -37,7 +30,7 @@ static prs_ErrCode createRange(prs_Range *range, char x, char y, const char *seq
 prs_ErrCode prs_createDigitRange(prs_Range *range, char n1, char n2) {
     assert(range);
 
-    return createRange(range, n1, n2, DIGITS);
+    return createRange(range, n1, n2, PRS_ASCII_DIGIT_START, PRS_ASCII_DIGIT_END);
 }
 
 prs_ErrCode prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase) {
@@ -50,7 +43,7 @@ prs_ErrCode prs_createLetterRange(prs_Range *range, char c1, char c2, bool upper
         c2 = tolower(c2);
     }
 
-    return createRange(range, c1, c2, LETTERS);
+    return createRange(range, c1, c2, PRS_ASCII_LETTER_START, PRS_ASCII_LETTER_END);
 }
 
 /*bool lex_matchInRange(lex_Range *range, char c, bool isLetter) {
@@ -107,7 +100,7 @@ prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t len
 
     if (lengthWithoutSpaces % 3 != 0) {
         free(buffer);
-        return -1;
+        return PRS_INVALID_RANGE_PATTERN;
     }
 
     size_t rangesNumber = lengthWithoutSpaces / 3;
@@ -122,10 +115,12 @@ prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t len
     size_t i;
 
     for (i = 0;i < rangesNumber;++i) {
-        if (prs_extractRange(ranges + i, pos) != PRS_OK) {
+        prs_ErrCode errCode = prs_extractRange(ranges + i, pos);
+
+        if (errCode != PRS_OK) {
             free(buffer);
             free(ranges);
-            return -1;
+            return errCode;
         }
         pos += 3;
     }
@@ -537,12 +532,12 @@ int prs_splitDelimiters(ll_Iterator *it, const char *delimiters) {
             memcpy(newItem, ptr, length);
             newItem[length] = '\0';
 
-            prs_StringItem *stringItem = malloc(sizeof(*stringItem));
-            stringItem->item = newItem;
-            stringItem->column = stringItem->line = -1;
+            prs_StringItem *stringItem2 = malloc(sizeof(*stringItem2));
+            stringItem2->item = newItem;
+            stringItem2->column = stringItem->line = -1;
 
             // Inserts the new item into the list right after the current item
-            ll_iteratorInsert(it, stringItem);
+            ll_iteratorInsert(it, stringItem2);
 
             // Adds a null character at the position of the delimiter
             // We only keep the part that is before the delimiter

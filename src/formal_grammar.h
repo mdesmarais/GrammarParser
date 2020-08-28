@@ -74,7 +74,7 @@ void fg_freeGrammar(fg_Grammar *g);
  * @param token pointer to a structure that will receive values
  * @param it iterator to a list that contains items
  * @param tokenNameItem pointer to the string item
- * @return FG_OK if not error occured
+ * @return FG_OK if not error occurs
  */
 prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, prs_StringItem *tokenNameItem);
 

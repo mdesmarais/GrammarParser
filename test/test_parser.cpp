@@ -2,9 +2,7 @@
 
 #include "helpers.hpp"
 
-#include <stdio.h>
-#include <string.h>
-
+#include <cstdio>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -13,7 +11,7 @@ extern "C" {
 #include <formal_grammar.h>
 #include <linked_list.h>
 #include <parser.h>
-};
+}
 
 using Catch::Matchers::Equals;
 
@@ -29,7 +27,7 @@ SCENARIO("Create a letter range from two given chars", "[parser]") {
     }
 
     GIVEN("The second character that is not a valid letter") {
-        int result = prs_createLetterRange(&range, 'f', '$', false);
+        int result = prs_createLetterRange(&range, 'f', '{', false);
 
         THEN("It should return an error") {
             REQUIRE(PRS_INVALID_CHAR_RANGE == result);
@@ -51,11 +49,11 @@ SCENARIO("Create a letter range from two given chars", "[parser]") {
             REQUIRE(PRS_OK == result);
 
             AND_THEN("range struct should have its first pointer on char x") {
-                REQUIRE('x' == *range.start);
+                REQUIRE('x' == range.start);
             }
 
             AND_THEN("range struct should have its second pointer on char z") {
-                REQUIRE('z' == *(range.end - 1));
+                REQUIRE('z' == range.end - 1);
             }
         }
     }
@@ -86,11 +84,11 @@ SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[pars
             REQUIRE(PRS_OK == prs_extractRange(&range, input.c_str()));
 
             AND_THEN("Range structure should have its first pointer on char a") {
-                REQUIRE('a' == *range.start);
+                REQUIRE('a' == range.start);
             }
 
             AND_THEN("Range structure should have its second pointer on char b") {
-                REQUIRE('b' == *(range.end - 1));
+                REQUIRE('b' == range.end - 1);
             }
         }
 
@@ -104,11 +102,11 @@ SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[pars
             REQUIRE(PRS_OK == prs_extractRange(&range, input.c_str()));
 
             AND_THEN("Range structure should have its first pointer on char a") {
-                REQUIRE('a' == *range.start);
+                REQUIRE('a' == range.start);
             }
 
             AND_THEN("Range structure should have its second pointer on char b") {
-                REQUIRE('b' == *(range.end - 1));
+                REQUIRE('b' == range.end - 1);
             }
 
             AND_THEN("Uppercase boolean should be set to true") {
@@ -124,26 +122,26 @@ SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[pars
             REQUIRE(PRS_OK == prs_extractRange(&range, input.c_str()));
 
             AND_THEN("Range structure should have its first pointer on char 1") {
-                REQUIRE('1' == *range.start);
+                REQUIRE('1' == range.start);
             }
 
             AND_THEN("Range structure should have its second pointer on char 5") {
-                REQUIRE('5' == *(range.end - 1));
+                REQUIRE('5' == range.end - 1);
             }
         }
     }
 }
 
 SCENARIO("A range block ([...]) can contain several ranges", "[parser]") {
-    prs_Range *ranges = NULL;
+    prs_Range *ranges = nullptr;
 
     GIVEN("An empty string") {
-        std::string input = "";
+        std::string input;
 
         THEN("It should return 0") {
             REQUIRE(0 == prs_extractRanges(&ranges, input.c_str(), input.size()));
 
-            AND_THEN("The input pointer should remaiun unchanged (NULL)") {
+            AND_THEN("The input pointer should remain unchanged (nullptr)") {
                 REQUIRE_FALSE(ranges);
             }
         }
@@ -152,7 +150,7 @@ SCENARIO("A range block ([...]) can contain several ranges", "[parser]") {
     GIVEN("A string with 3 ranges") {
         std::string input = "a-zA-Z0-9";
 
-        THEN("It shoud return 3") {
+        THEN("It should return 3") {
             REQUIRE(3 == prs_extractRanges(&ranges, input.c_str(), input.size()));
 
             AND_THEN("The input pointer should have been modified") {
@@ -163,30 +161,32 @@ SCENARIO("A range block ([...]) can contain several ranges", "[parser]") {
 
     GIVEN("A string with 2 valid patterns and one invalid") {
         std::string input = "a-z@-d1-3";
+        int res = prs_extractRanges(&ranges, input.c_str(), input.size());
 
-        THEN("It should return -1") {
-            REQUIRE(-1 == prs_extractRanges(&ranges, input.c_str(), input.size()));
+        THEN("It should return an error") {
+            REQUIRE(PRS_INVALID_RANGE_PATTERN == res);
+        }
 
-            AND_THEN("The input pointer should remaiun unchanged (NULL)") {
-                REQUIRE_FALSE(ranges);
-            }
+        AND_THEN("The input pointer should remain unchanged (nullptr)") {
+            REQUIRE_FALSE(ranges);
         }
     }
 
     GIVEN("A string with one pattern and an additional char") {
         std::string input = "a-zb";
+        int res = prs_extractRanges(&ranges, input.c_str(), input.size());
 
-        THEN("It should return -1") {
-            REQUIRE(-1 == prs_extractRanges(&ranges, input.c_str(), input.size()));
+        THEN("It should return an error") {
+            REQUIRE(PRS_INVALID_RANGE_PATTERN == res);
+        }
 
-            AND_THEN("The input pointer should remaiun unchanged (NULL)") {
-                REQUIRE_FALSE(ranges);
-            }
+        AND_THEN("The input pointer should remain unchanged (nullptr)") {
+            REQUIRE_FALSE(ranges);
         }
     }
 
     free(ranges);
-    ranges = NULL;
+    ranges = nullptr;
 }
 
 static int stringItemCmp(const prs_StringItem *d1, const prs_StringItem *d2) {
@@ -214,11 +214,11 @@ SCENARIO("Items can be extracted from a raw grammar", "[parser]") {
 
             REQUIRE(ll_isEqual(&itemList, &expected, (ll_DataComparator*) stringItemCmp));
 
-            ll_freeLinkedList(&expected, NULL);
+            ll_freeLinkedList(&expected, nullptr);
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }
 
 SCENARIO("Read a grammar file into a dynamic buffer", "[parser]") {
@@ -227,7 +227,7 @@ SCENARIO("Read a grammar file into a dynamic buffer", "[parser]") {
         REQUIRE(f);
 
         GIVEN("A null buffer") {
-            char *buffer = NULL;
+            char *buffer = nullptr;
 
             ssize_t length = prs_readGrammar(f, &buffer);
 
@@ -254,7 +254,6 @@ SCENARIO("Read a grammar file into a dynamic buffer", "[parser]") {
         }
 
         fclose(f);
-        f = NULL;
     }
 }
 
@@ -285,17 +284,17 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
         }
 
         AND_THEN("The entry rule should be rule1") {
-            fg_Rule *rule1 = (fg_Rule*) ht_getValue(&g.rules, "rule1");
+            auto rule1 = (fg_Rule*) ht_getValue(&g.rules, "rule1");
 
             REQUIRE(rule1);
             REQUIRE(g.entry == rule1);
         }
 
         AND_WHEN("Parsing an existing rule") {
-            ll_freeLinkedList(&itemList, NULL);
+            ll_freeLinkedList(&itemList, nullptr);
             fillItemList(&itemList, { "%rule1", "=", "rule1", ";" });
 
-            int res = prs_parseGrammarItems(&g, &itemList);
+            res = prs_parseGrammarItems(&g, &itemList);
 
             THEN("It should return an error") {
                 REQUIRE(FG_RULE_EXISTS == res);
@@ -303,10 +302,10 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
         }
 
         AND_WHEN("Parsing an existing token") {
-            ll_freeLinkedList(&itemList, NULL);
+            ll_freeLinkedList(&itemList, nullptr);
             fillItemList(&itemList, { "%TOKEN1", "=", "`already exists`", ";" });
 
-            int res = prs_parseGrammarItems(&g, &itemList);
+            res = prs_parseGrammarItems(&g, &itemList);
 
             THEN("it should return an error") {
                 REQUIRE(FG_TOKEN_EXISTS == res);
@@ -335,7 +334,7 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
     }
 
     fg_freeGrammar(&g);
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }
 
 SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
@@ -405,16 +404,16 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
             }
 
             AND_THEN("Resolution on rule1's production rule should have be done") {
-                fg_Rule *rule1 = (fg_Rule*) ht_getValue(&g.rules, "rule1");
+                auto rule1 = (fg_Rule*) ht_getValue(&g.rules, "rule1");
 
                 ll_Iterator it = ll_createIterator((ll_LinkedList*) rule1->productionRuleList.front->data);
 
                 // Testing recursive rule
-                fg_PRItem *prItem1 = (fg_PRItem*) ll_iteratorNext(&it);
+                auto prItem1 = (fg_PRItem*) ll_iteratorNext(&it);
                 REQUIRE(rule1 == prItem1->rule);
 
-                fg_PRItem *prItem2 = (fg_PRItem*) ll_iteratorNext(&it);
-                fg_Token *token1 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN1");
+                auto prItem2 = (fg_PRItem*) ll_iteratorNext(&it);
+                auto token1 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN1");
                 REQUIRE(token1 == prItem2->token);
             }
         }
@@ -434,8 +433,8 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
             }
 
             AND_THEN("TOKEN1 should have a reference on TOKEN2") {
-                fg_Token *token1 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN1");
-                fg_Token *token2 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN2");
+                auto token1 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN1");
+                auto token2 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN2");
 
                 REQUIRE(token1);
                 REQUIRE(token2);
@@ -446,7 +445,7 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
     }
 
     fg_freeGrammar(&g);
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }
 
 SCENARIO("string items have a position (line, column) in a source string", "[parser]") {
@@ -476,7 +475,7 @@ SCENARIO("string items have a position (line, column) in a source string", "[par
         AND_THEN("Each string item's position should have been update") {
             it = ll_createIterator(&itemList);
 
-            prs_StringItem *item = (prs_StringItem*) ll_iteratorNext(&it);
+            auto item = (prs_StringItem*) ll_iteratorNext(&it);
             REQUIRE(1 == item->line);
             REQUIRE(2 == item->column);
 
@@ -490,5 +489,5 @@ SCENARIO("string items have a position (line, column) in a source string", "[par
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }

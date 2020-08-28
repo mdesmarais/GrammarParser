@@ -1,11 +1,11 @@
 #include <catch2/catch.hpp>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 extern "C" {
 #include <linked_list.h>
 #include <string_utils.h>
-};
+}
 
 using Catch::Matchers::Equals;
 
@@ -88,7 +88,7 @@ SCENARIO("Consecutive spaces are removed", "[string_utils") {
 }
 
 SCENARIO("String can be splitted with by a delimiter", "[string_utils]") {
-    GIVEN("A string with 3 items and several occurences of the delimiter") {
+    GIVEN("A string with 3 items and several occurrences of the delimiter") {
         std::string input = ",hello,world,,,  ";
 
         THEN("It should have extracted 3 items") {
@@ -98,13 +98,13 @@ SCENARIO("String can be splitted with by a delimiter", "[string_utils]") {
             REQUIRE(3 == str_splitItems(input.c_str(), input.size(), &itemList, ','));
 
             ll_LinkedList expected;
-            ll_createLinkedList(&expected, NULL);
+            ll_createLinkedList(&expected, nullptr);
             ll_pushBackBatch(&expected, 3, "hello", "world", "  ");
 
             REQUIRE(ll_isEqual(&expected, &itemList, reinterpret_cast<int (*)(const void *, const void *)>(strcmp)));
 
-            ll_freeLinkedList(&expected, NULL);
-            ll_freeLinkedList(&itemList, NULL);
+            ll_freeLinkedList(&expected, nullptr);
+            ll_freeLinkedList(&itemList, nullptr);
         }
     }
 }

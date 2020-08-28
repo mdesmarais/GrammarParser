@@ -116,7 +116,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     fg_freeToken(&token);
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }
 
 SCENARIO("A production rule is made by one or more items (token or rule)", "[formal_grammar]") {
@@ -131,7 +131,7 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return OK") {
-            prs_StringItem *lastItem = NULL;
+            prs_StringItem *lastItem = nullptr;
             int res = fg_extractProductionRule(&productionRule, &it, (prs_StringItem*) ll_iteratorNext(&it), &lastItem);
 
             REQUIRE(PRS_OK == res);
@@ -152,7 +152,7 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            prs_StringItem *lastItem = NULL;
+            prs_StringItem *lastItem = nullptr;
             int res = fg_extractProductionRule(&productionRule, &it, (prs_StringItem*) ll_iteratorNext(&it), &lastItem);
 
             REQUIRE(FG_PRITEM_UNKNOWN_TYPE == res);
@@ -172,7 +172,7 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
-            prs_StringItem *lastItem = NULL;
+            prs_StringItem *lastItem = nullptr;
             int res = fg_extractProductionRule(&productionRule, &it, (prs_StringItem*) ll_iteratorNext(&it), &lastItem);
 
             REQUIRE(FG_PR_EMPTY == res);
@@ -183,8 +183,8 @@ SCENARIO("A production rule is made by one or more items (token or rule)", "[for
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
-    ll_freeLinkedList(&productionRule, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
+    ll_freeLinkedList(&productionRule, nullptr);
 }
 
 SCENARIO("A rule is made by one or more rules separated by a pipe and ends with a semicolon", "[formal_grammar]") {
@@ -224,6 +224,6 @@ SCENARIO("A rule is made by one or more rules separated by a pipe and ends with 
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
     fg_freeRule(&rule);
 }

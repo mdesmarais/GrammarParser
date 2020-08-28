@@ -7,7 +7,7 @@ extern "C" {
 SCENARIO("Items can be added at the end of the list individually", "[linked_list]") {
     GIVEN("An empty list") {
         ll_LinkedList list;
-        ll_createLinkedList(&list, NULL);
+        ll_createLinkedList(&list, nullptr);
 
         WHEN("Adding two integers") {
             int n1 = 10;
@@ -30,7 +30,7 @@ SCENARIO("Items can be added at the end of the list individually", "[linked_list
                 REQUIRE_FALSE(item1 == item2);
             }
 
-            AND_THEN("Firt item's value should be n1") {
+            AND_THEN("First item's value should be n1") {
                 REQUIRE(n1 == *((int*) item1->data));
                 REQUIRE(item2 == item1->next);
             }
@@ -41,13 +41,13 @@ SCENARIO("Items can be added at the end of the list individually", "[linked_list
             }
         }
 
-        ll_freeLinkedList(&list, NULL);
+        ll_freeLinkedList(&list, nullptr);
     }
 }
 
 SCENARIO("Several items can be added at the end of the list in a single func call", "[linked_list]") {
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, NULL);
+    ll_createLinkedList(&itemList, nullptr);
 
     GIVEN("A list with one item") {
         int n1 = 12;
@@ -63,7 +63,7 @@ SCENARIO("Several items can be added at the end of the list in a single func cal
                 REQUIRE(3 == itemList.size);
             }
 
-            AND_THEN("Thos 3 items should be at the end of the list") {
+            AND_THEN("This 3 items should be at the end of the list") {
                 ll_LinkedListItem *item1 = itemList.front;
                 ll_LinkedListItem *item2 = item1->next;
                 ll_LinkedListItem *item3 = item2->next;
@@ -75,12 +75,12 @@ SCENARIO("Several items can be added at the end of the list in a single func cal
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }
 
 SCENARIO("A function can be applied to each item in the list", "[linked_list]") {
     ll_LinkedList list;
-    ll_createLinkedList(&list, NULL);
+    ll_createLinkedList(&list, nullptr);
     GIVEN("A list with 2 integers") {
         int n1 = 89;
         int n2 = 3;
@@ -111,7 +111,7 @@ SCENARIO("A function can be applied to each item in the list", "[linked_list]") 
             }
         }
     }
-    ll_freeLinkedList(&list, NULL);
+    ll_freeLinkedList(&list, nullptr);
 }
 
 static int intCmp(const void *n1, const void *n2) {
@@ -123,8 +123,8 @@ static int intCmp(const void *n1, const void *n2) {
 
 SCENARIO("Linked lists can be compared (equality)", "[linked_list]") {
     ll_LinkedList l1, l2;
-    ll_createLinkedList(&l1, NULL);
-    ll_createLinkedList(&l2, NULL);
+    ll_createLinkedList(&l1, nullptr);
+    ll_createLinkedList(&l2, nullptr);
 
     GIVEN("Two empty lists") {
         THEN("It should return true") {
@@ -171,13 +171,13 @@ SCENARIO("Linked lists can be compared (equality)", "[linked_list]") {
         }
     }
 
-    ll_freeLinkedList(&l1, NULL);
-    ll_freeLinkedList(&l2, NULL);
+    ll_freeLinkedList(&l1, nullptr);
+    ll_freeLinkedList(&l2, nullptr);
 }
 
 SCENARIO("Existence of an item in the list can be done with a comparator", "[linked_list]") {
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, NULL);
+    ll_createLinkedList(&itemList, nullptr);
 
     GIVEN("A list with several integers") {
         int n1 = 78;
@@ -205,12 +205,12 @@ SCENARIO("Existence of an item in the list can be done with a comparator", "[lin
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }
 
 SCENARIO("An item can be removed from the list", "[linked_list]") {
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, NULL);
+    ll_createLinkedList(&itemList, nullptr);
 
     GIVEN("A list with three items") {
         int n1 = 1;
@@ -220,8 +220,8 @@ SCENARIO("An item can be removed from the list", "[linked_list]") {
         ll_pushBackBatch(&itemList, 3, &n1, &n2, &n3);
 
         WHEN("Removing an unknown element") {
-            int n3 = 78;
-            bool result = ll_removeItem(&itemList, &n3, intCmp, NULL);
+            int n4 = 78;
+            bool result = ll_removeItem(&itemList, &n4, intCmp, nullptr);
 
             THEN("It should return false") {
                 REQUIRE_FALSE(result);
@@ -233,7 +233,7 @@ SCENARIO("An item can be removed from the list", "[linked_list]") {
         }
 
         WHEN("Deleting first element (n1)") {
-            bool result = ll_removeItem(&itemList, &n1, intCmp, NULL);
+            bool result = ll_removeItem(&itemList, &n1, intCmp, nullptr);
 
             THEN("It should return true") {
                 REQUIRE(result);
@@ -252,7 +252,7 @@ SCENARIO("An item can be removed from the list", "[linked_list]") {
             ll_LinkedListItem *front = itemList.front;
             ll_LinkedListItem *back = itemList.back;
 
-            bool result = ll_removeItem(&itemList, &n2, intCmp, NULL);
+            bool result = ll_removeItem(&itemList, &n2, intCmp, nullptr);
 
             THEN("It should return true") {
                 REQUIRE(result);
@@ -269,7 +269,7 @@ SCENARIO("An item can be removed from the list", "[linked_list]") {
         }
 
         WHEN("Deleting last element") {
-            bool result = ll_removeItem(&itemList, &n3, intCmp, NULL);
+            bool result = ll_removeItem(&itemList, &n3, intCmp, nullptr);
 
             THEN("It should return true") {
                 REQUIRE(result);
@@ -286,12 +286,12 @@ SCENARIO("An item can be removed from the list", "[linked_list]") {
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }
 
 SCENARIO("Items in list can be retrieved individually with an iterator", "[linked_list]") {
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, NULL);
+    ll_createLinkedList(&itemList, nullptr);
 
     GIVEN("A list with 3 items") {
         int n1 = 1;
@@ -318,12 +318,12 @@ SCENARIO("Items in list can be retrieved individually with an iterator", "[linke
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }
 
 SCENARIO("Items can be inserted into a list with an iterator", "[linked_list]") {
     ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, NULL);
+    ll_createLinkedList(&itemList, nullptr);
 
     GIVEN("A list with 3 items") {
         int n1 = 1;
@@ -342,15 +342,15 @@ SCENARIO("Items can be inserted into a list with an iterator", "[linked_list]") 
 
             THEN("The inserted item should put between 1 and 55") {
                 ll_LinkedList expected;
-                ll_createLinkedList(&expected, NULL);
+                ll_createLinkedList(&expected, nullptr);
 
                 ll_pushBackBatch(&expected, 4, &n1, &n4, &n2, &n3);
                 REQUIRE(ll_isEqual(&expected, &itemList, intCmp));
 
-                ll_freeLinkedList(&expected, NULL);
+                ll_freeLinkedList(&expected, nullptr);
             }
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
+    ll_freeLinkedList(&itemList, nullptr);
 }

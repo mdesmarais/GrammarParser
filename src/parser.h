@@ -2,10 +2,17 @@
 #define PARSER_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "parser_errors.h"
+
+#define PRS_ASCII_DIGIT_START 48
+#define PRS_ASCII_DIGIT_END 57
+
+#define PRS_ASCII_LETTER_START 97
+#define PRS_ASCII_LETTER_END 122
 
 typedef struct prs_StringItem {
     char *item;
@@ -20,8 +27,8 @@ typedef enum prs_RangeQuantifier {
 
 typedef struct prs_Range {
     bool uppercaseLetter;
-    const char *start;
-    const char *end;
+    uint8_t start;
+    uint8_t end;
 } prs_Range;
 
 struct ll_LinkedList;
