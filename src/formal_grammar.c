@@ -51,7 +51,8 @@ prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, prs_StringItem *to
     assert(it);
     assert(tokenNameItem);
 
-    const char *tokenName = tokenNameItem->item;
+    // We don't need the prefix (%)
+    const char *tokenName = tokenNameItem->item + 1;
 
     token->name = calloc(strlen(tokenName) + 1, 1);
     strcpy(token->name, tokenName);
@@ -163,7 +164,8 @@ prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, prs_StringItem *ruleN
     assert(it);
     assert(ruleNameItem);
 
-    const char *ruleName = ruleNameItem->item;
+    // We don't need the prefix (%)
+    const char *ruleName = ruleNameItem->item + 1;
 
     rule->name = calloc(strlen(ruleName) + 1, 1);
     strcpy(rule->name, ruleName);
@@ -270,7 +272,6 @@ prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it,
     } while (ll_iteratorHasNext(it) && (currentStringItem = ll_iteratorNext(it)));
 
     if (extractedItems == 0) {
-        log_debug("GROS CON");
         return FG_PR_EMPTY;
     }
 

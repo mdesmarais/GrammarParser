@@ -16,7 +16,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     fg_Token token = {};
 
     GIVEN("A token without a value") {
-        fillItemList(&itemList, { "TOKEN", "=", ";" });
+        fillItemList(&itemList, { "%TOKEN", "=", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
@@ -26,7 +26,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     GIVEN("A token without the ending semicolon") {
-        fillItemList(&itemList, { "TOKEN", "=", "FUNC" });
+        fillItemList(&itemList, { "%TOKEN", "=", "FUNC" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
@@ -36,7 +36,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     GIVEN("A token without the equal sign (token name directly followed by its value") {
-        fillItemList(&itemList, { "TOKEN", "`FUNC`", ";" });
+        fillItemList(&itemList, { "%TOKEN", "`FUNC`", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
@@ -46,7 +46,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     GIVEN("A token without more items than its name") {
-        fillItemList(&itemList, { "TOKEN" });
+        fillItemList(&itemList, { "%TOKEN" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
@@ -56,7 +56,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     GIVEN("A valid string token with a quantifier") {
-        fillItemList(&itemList, { "TOKEN", "=", "`FUNC`", "+", ";" });
+        fillItemList(&itemList, { "%TOKEN", "=", "`FUNC`", "+", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return ok and the token structure should have been updated") {
@@ -71,7 +71,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     GIVEN("A valid range token with 2 ranges") {
-        fillItemList(&itemList, { "TOKEN", "=", "[a-z2-4]", ";" });
+        fillItemList(&itemList, { "%TOKEN", "=", "[a-z2-4]", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return OK") {
@@ -87,7 +87,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     GIVEN("A token with a self reference") {
-        fillItemList(&itemList, { "TOKEN", "=", "TOKEN", ";" });
+        fillItemList(&itemList, { "%TOKEN", "=", "TOKEN", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
@@ -97,7 +97,7 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     }
 
     GIVEN("A token with a ref on another token") {
-        fillItemList(&itemList, { "TOKEN", "=", "TOKEN2", "?", ";" });
+        fillItemList(&itemList, { "%TOKEN", "=", "TOKEN2", "?", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         int res = fg_extractToken(&token, &it, (prs_StringItem*) ll_iteratorNext(&it));
@@ -195,7 +195,7 @@ SCENARIO("A rule is made by one or more rules separated by a pipe and ends with 
     fg_createRule(&rule);
 
     GIVEN("An iterator on a rule without the end marker") {
-        fillItemList(&itemList, { "basic_rule", "=", "rule1" });
+        fillItemList(&itemList, { "%basic_rule", "=", "rule1" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
@@ -205,7 +205,7 @@ SCENARIO("A rule is made by one or more rules separated by a pipe and ends with 
     }
 
     GIVEN("An iterator on an empty rule") {
-        fillItemList(&itemList, { "basic_rule", "=", ";" });
+        fillItemList(&itemList, { "%basic_rule", "=", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return an error") {
@@ -215,7 +215,7 @@ SCENARIO("A rule is made by one or more rules separated by a pipe and ends with 
     }
 
     GIVEN("An iterator on a two production rules") {
-        fillItemList(&itemList, { "basic_rule", "=", "rule1", "|", "TOKEN1", ";" });
+        fillItemList(&itemList, { "%basic_rule", "=", "rule1", "|", "TOKEN1", ";" });
         ll_Iterator it = ll_createIterator(&itemList);
 
         THEN("It should return OK") {

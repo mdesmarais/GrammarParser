@@ -355,12 +355,12 @@ prs_ErrCode prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
     while (ll_iteratorHasNext(&it)) {
         prs_StringItem *stringItem = ll_iteratorNext(&it);
 
-        if (!isalpha(*stringItem->item)) {
+        if (strlen(stringItem->item) < 2 || *stringItem->item != '%' || !isalpha(stringItem->item[1])) {
             prs_setErrorState(stringItem);
             return PRS_UNKNOWN_ITEM;
         }
 
-        if (isupper(*stringItem->item)) {
+        if (isupper(stringItem->item[1])) {
             // it should be a token
             fg_Token *token = malloc(sizeof(*token));
             memset(token, 0, sizeof(*token));

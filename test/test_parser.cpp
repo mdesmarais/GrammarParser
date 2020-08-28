@@ -3,7 +3,6 @@
 #include "helpers.hpp"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <fstream>
@@ -17,11 +16,6 @@ extern "C" {
 };
 
 using Catch::Matchers::Equals;
-
-static char* allocateCString(std::string str) {
-    char *string = (char*) calloc(str.size() + 1, 1);
-    return strcpy(string, str.c_str());
-}
 
 SCENARIO("Create a letter range from two given chars", "[parser]") {
     prs_Range range = {};
@@ -204,7 +198,7 @@ SCENARIO("Items can be extracted from a raw grammar", "[parser]") {
     ll_createLinkedList(&itemList, (ll_DataDestructor*) prs_freeStringItem);
 
     GIVEN("A string containing a rule with several production rules") {
-        std::string input = "op=      NUMBER \n"
+        std::string input = "%op=      NUMBER \n"
                             "\t| SUB NUMBER \n"
                             "\t| `hello world`;";
 
@@ -216,7 +210,7 @@ SCENARIO("Items can be extracted from a raw grammar", "[parser]") {
             ll_LinkedList expected;
             ll_createLinkedList(&expected, (ll_DataDestructor*) prs_freeStringItem);
 
-            fillItemList(&expected, { "op", "=", "NUMBER", "|", "SUB", "NUMBER", "|", "`hello world`", ";" });
+            fillItemList(&expected, { "%op", "=", "NUMBER", "|", "SUB", "NUMBER", "|", "`hello world`", ";" });
 
             REQUIRE(ll_isEqual(&itemList, &expected, (ll_DataComparator*) stringItemCmp));
 
@@ -272,7 +266,7 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
     fg_createGrammar(&g);
 
     GIVEN("A list with a valid token and an unknown item") {
-        fillItemList(&itemList, { "TOKEN1", "=", "[a-z]", ";", "`hello`", ";" });
+        fillItemList(&itemList, { "%TOKEN1", "=", "[a-z]", ";", "`hello`", ";" });
 
         int res = prs_parseGrammarItems(&g, &itemList);
 
@@ -282,7 +276,7 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
     }
 
     GIVEN("A list with 1 rule and 1 token") {
-        fillItemList(&itemList, { "TOKEN1", "=", "`hello`", ";", "rule1", "=", "TOKEN1", ";" });
+        fillItemList(&itemList, { "%TOKEN1", "=", "`hello`", ";", "%rule1", "=", "TOKEN1", ";" });
 
         int res = prs_parseGrammarItems(&g, &itemList);
 
@@ -299,7 +293,7 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
 
         AND_WHEN("Parsing an existing rule") {
             ll_freeLinkedList(&itemList, NULL);
-            fillItemList(&itemList, { "rule1", "=", "rule1", ";" });
+            fillItemList(&itemList, { "%rule1", "=", "rule1", ";" });
 
             int res = prs_parseGrammarItems(&g, &itemList);
 
@@ -310,7 +304,7 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
 
         AND_WHEN("Parsing an existing token") {
             ll_freeLinkedList(&itemList, NULL);
-            fillItemList(&itemList, { "TOKEN1", "=" ,"`already exists`", ";" });
+            fillItemList(&itemList, { "%TOKEN1", "=", "`already exists`", ";" });
 
             int res = prs_parseGrammarItems(&g, &itemList);
 
@@ -321,7 +315,7 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
     }
 
     GIVEN("A list with an invalid token") {
-        fillItemList(&itemList, { "TOKEN1", "=", ";" });
+        fillItemList(&itemList, { "%TOKEN1", "=", ";" });
 
         int res = prs_parseGrammarItems(&g, &itemList);
 
@@ -331,7 +325,7 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
     }
 
     GIVEN("A list with an invalid rule") {
-        fillItemList(&itemList, { "rule", "TOKEN", ";" });
+        fillItemList(&itemList, { "%rule", "TOKEN", ";" });
 
         int res = prs_parseGrammarItems(&g, &itemList);
 
@@ -352,7 +346,7 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
     fg_createGrammar(&g);
 
     GIVEN("A token that uses an unknown token") {
-        fillItemList(&itemList, { "TOKEN1", "=", "TOKEN2", ";" });
+        fillItemList(&itemList, { "%TOKEN1", "=", "TOKEN2", ";" });
 
         int res = prs_parseGrammarItems(&g, &itemList);
         REQUIRE(res == PRS_OK);
@@ -367,7 +361,7 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
     }
 
     GIVEN("A rule that uses an unknown rule") {
-        fillItemList(&itemList, { "rule1", "=", "rule2", ";" });
+        fillItemList(&itemList, { "%rule1", "=", "rule2", ";" });
 
         int res = prs_parseGrammarItems(&g, &itemList);
         REQUIRE(res == PRS_OK);
@@ -382,7 +376,7 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
     }
 
     GIVEN("A rule that uses an unknown token") {
-        fillItemList(&itemList, { "rule1", "=", "TOKEN1", ";" });
+        fillItemList(&itemList, { "%rule1", "=", "TOKEN1", ";" });
 
         int res = prs_parseGrammarItems(&g, &itemList);
         REQUIRE(res == PRS_OK);
@@ -397,8 +391,8 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
     }
 
     GIVEN("Two rules : one is using the other and a token") {
-        fillItemList(&itemList, { "rule1", "=", "rule1", "TOKEN1", "|", "rule2", ";",
-                         "TOKEN1", "=", "[a-z]", ";", "rule2", "=", "TOKEN1", ";" });
+        fillItemList(&itemList, { "%rule1", "=", "rule1", "TOKEN1", "|", "rule2", ";",
+                         "%TOKEN1", "=", "[a-z]", ";", "%rule2", "=", "TOKEN1", ";" });
 
         int res = prs_parseGrammarItems(&g, &itemList);
         REQUIRE(res == PRS_OK);
@@ -427,7 +421,7 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
     }
 
     GIVEN("Two tokens : one is referencing the other") {
-        fillItemList(&itemList, { "TOKEN1", "=", "TOKEN2", ";", "TOKEN2", "=", "`test`", ";" });
+        fillItemList(&itemList, { "%TOKEN1", "=", "TOKEN2", ";", "%TOKEN2", "=", "`test`", ";" });
 
         int res = prs_parseGrammarItems(&g, &itemList);
         REQUIRE(res == PRS_OK);

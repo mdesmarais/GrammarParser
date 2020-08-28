@@ -29,10 +29,10 @@ static const char *errorMessages[] = {
 
         "Unknown token symbol",
         "Unknown rule symbol",
-        "Unknown production rule item",
+        "Unknown item",
 
         "Empty production rule",
-        "Unknown item type"
+        "Unknown production rule item type"
 };
 
 size_t prs_getErrorMessage(char *buffer, size_t capacity, prs_ErrCode errCode) {
