@@ -7,6 +7,17 @@
 struct ll_LinkedList;
 
 /**
+ * Computes the number of digits in a given integer.
+ *
+ * If n is negative, then the minus sign will be added
+ * to the length.
+ *
+ * @param n an integer
+ * @return number of digits
+ */
+int str_numberLength(int n);
+
+/**
  * Removes all whitespaces from a given source string.
  *
  * The result will be written into the destination ptr.

@@ -158,7 +158,7 @@ static int splitItems(ll_LinkedList *dest, const char *source, size_t length) {
 
         prs_StringItem *stringItem = malloc(sizeof(*stringItem));
         stringItem->item = item;
-        stringItem->line = stringItem->column;
+        stringItem->line = stringItem->column = -1;
 
         ll_pushBack(dest, stringItem);
     }
@@ -302,6 +302,42 @@ ssize_t prs_readGrammar(FILE *stream, char **pBuffer) {
     return pos;
 }
 
+bool prs_computeItemsPosition(const char *source, ll_Iterator *it) {
+    assert(source);
+    assert(it);
+
+    int line = 1;
+    int column = 1;
+
+    while (ll_iteratorHasNext(it)) {
+        prs_StringItem *stringItem = ll_iteratorNext(it);
+
+        char *start = strstr(source, stringItem->item);
+
+        if (!start) {
+            return false;
+        }
+
+        for (const char *curr = source;curr != start;++curr) {
+            if (*curr == '\n') {
+                column = 1;
+                ++line;
+            }
+            else {
+                ++column;
+            }
+        }
+
+        stringItem->column = column;
+        stringItem->line = line;
+
+        source = start + strlen(stringItem->item);
+        column += strlen(stringItem->item);
+    }
+
+    return true;
+}
+
 void prs_freeStringItem(prs_StringItem *stringItem) {
     if (stringItem) {
         free(stringItem->item);
@@ -320,8 +356,7 @@ prs_ErrCode prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
         prs_StringItem *stringItem = ll_iteratorNext(&it);
 
         if (!isalpha(*stringItem->item)) {
-            // error
-            log_error("unknown item %s", stringItem);
+            prs_setErrorState(stringItem);
             return PRS_UNKNOWN_ITEM;
         }
 
@@ -330,15 +365,15 @@ prs_ErrCode prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
             fg_Token *token = malloc(sizeof(*token));
             memset(token, 0, sizeof(*token));
 
-            int errCode = fg_extractToken(token, &it, stringItem->item);
+            int errCode = fg_extractToken(token, &it, stringItem);
 
             if (errCode != PRS_OK) {
-                fg_freeToken(token);
                 free(token);
-                log_error("Token extraction error");
+                prs_setErrorState(stringItem);
                 return errCode;
             }
 
+            // @TODO check if the token does not already exist
             ht_insertElement(&g->tokens, token->name, token);
         }
         else {
@@ -346,15 +381,19 @@ prs_ErrCode prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
             fg_Rule *rule = malloc(sizeof(*rule));
             fg_createRule(rule);
 
-            int errCode = fg_extractRule(rule, &it, stringItem->item);
+            int errCode = fg_extractRule(rule, &it, stringItem);
 
             if (errCode != PRS_OK) {
                 fg_freeRule(rule);
                 free(rule);
-                log_error("Rule extraction error");
+
+                if (!prs_hasErrorState()) {
+                    prs_setErrorState(stringItem);
+                }
                 return errCode;
             }
 
+            // @TODO check if the rule does not already exist
             ht_insertElement(&g->rules, rule->name, rule);
 
             if (!entryRule) {
@@ -385,22 +424,22 @@ static void resolveProductionRulesSymbols(void *data, void *args) {
         fg_PRItem *prItem = ll_iteratorNext(&it);
 
         if (prItem->type == FG_RULE_ITEM) {
-            fg_Rule *refRule = ht_getValue(&resolverArg->g->rules, prItem->symbol);
+            fg_Rule *refRule = ht_getValue(&resolverArg->g->rules, prItem->symbol->item);
 
             if (!refRule) {
                 resolverArg->errCode = FG_UNKNOWN_RULE;
-                log_error("Unknown rule %s for %s", prItem->symbol, resolverArg->rule->name);
+                prs_setErrorState(prItem->symbol);
                 break;
             }
 
             prItem->rule = refRule;
         }
         else if (prItem->type == FG_TOKEN_ITEM) {
-            fg_Token *refToken = ht_getValue(&resolverArg->g->tokens, prItem->symbol);
+            fg_Token *refToken = ht_getValue(&resolverArg->g->tokens, prItem->symbol->item);
 
             if (!refToken) {
                 resolverArg->errCode = FG_UNKNOWN_TOKEN;
-                log_error("Unknown token %s for %s", prItem->symbol, resolverArg->rule->name);
+                prs_setErrorState(prItem->symbol);
                 break;
             }
 
@@ -422,10 +461,10 @@ prs_ErrCode prs_resolveSymbols(fg_Grammar *g) {
 
         if (token->type == FG_REF_TOKEN) {
             struct fg_RefToken *refTokenValue = &token->value.refToken;
-            fg_Token *refToken = ht_getValue(&g->tokens, refTokenValue->symbol);
+            fg_Token *refToken = ht_getValue(&g->tokens, refTokenValue->symbol->item);
 
             if (!refToken) {
-                log_error("Unknown token %s for %s", refTokenValue->symbol, token->name);
+                prs_setErrorState(refTokenValue->symbol);
                 return FG_UNKNOWN_TOKEN;
             }
 

@@ -2,8 +2,9 @@
 #define FORMAL_GRAMMAR_H
 
 #include "hash_table.h"
-#include "parser.h"
 #include "linked_list.h"
+#include "parser.h"
+#include "parser_errors.h"
 
 #include <string.h>
 
@@ -21,7 +22,7 @@ struct fg_RangesToken {
 struct fg_Token;
 
 struct fg_RefToken {
-    char *symbol;
+    prs_StringItem *symbol;
     struct fg_Token *token;
 };
 
@@ -52,7 +53,7 @@ typedef struct fg_PRItem {
     fg_PrItemType type;
     fg_Rule *rule;
     fg_Token *token;
-    char *symbol;
+    prs_StringItem *symbol;
 } fg_PRItem;
 
 typedef struct fg_Grammar {
@@ -72,10 +73,10 @@ void fg_freeGrammar(fg_Grammar *g);
  *
  * @param token pointer to a structure that will receive values
  * @param it iterator to a list that contains items
- * @param tokenName name of the token
+ * @param tokenNameItem pointer to the string item
  * @return FG_OK if not error occured
  */
-prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName);
+prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, prs_StringItem *tokenNameItem);
 
 /**
  * Frees allocated memory in a token.
@@ -86,15 +87,11 @@ prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenN
  */
 void fg_freeToken(fg_Token *token);
 
-prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName);
+prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, prs_StringItem *ruleNameItem);
 
 void fg_createRule(fg_Rule *rule);
 void fg_freeRule(fg_Rule *rule);
 
-prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, char *currentItem, char **pLastItem);
-
-prs_ErrCode fg_extractPrItem(fg_PRItem *prItem, const char *item);
-
-void fg_freePrItem(fg_PRItem *prItem);
+prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, prs_StringItem *currentStringItem, prs_StringItem **pLastStringItem);
 
 #endif //FORMAL_GRAMMAR_H

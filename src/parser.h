@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "parser_errors.h"
+
 typedef struct prs_StringItem {
     char *item;
     int line;
@@ -21,33 +23,6 @@ typedef struct prs_Range {
     const char *start;
     const char *end;
 } prs_Range;
-
-typedef enum prs_ErrCode {
-    PRS_OK,
-    PRS_INVALID_CHAR_RANGE,
-    PRS_INVALID_RANGE,
-    PRS_INVALID_RANGE_PATTERN,
-
-    FG_TOKEN_INVALID,
-    FG_TOKEN_MISSING_END,
-    FG_TOKEN_MISSING_VALUE,
-    FG_TOKEN_INVALID_VALUE,
-    FG_TOKEN_UNKNOWN_VALUE_TYPE,
-    FG_TOKEN_SELF_REF,
-
-    FG_RULE_EMPTY,
-    FG_RULE_INVALID,
-    FG_RULE_MISSING_END,
-    FG_RULE_MISSING_VALUE,
-
-    FG_UNKNOWN_TOKEN,
-    FG_UNKNOWN_RULE,
-    PRS_UNKNOWN_ITEM,
-
-    FG_PR_EMPTY,
-
-    FG_PRITEM_UNKNOWN_TYPE
-} prs_ErrCode;
 
 struct ll_LinkedList;
 struct ll_Iterator;
@@ -73,6 +48,19 @@ prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t len
  * @return number of extracted items
  */
 int prs_extractGrammarItems(const char *source, size_t length, struct ll_LinkedList *itemList);
+
+/**
+ * Computes position of each item in the list in the given source.
+ *
+ * The source must be a null terminated string.
+ * If an item is not found in the string, then the function will return false.
+ * This functions updates fields line and column of prs_StringItem structure.
+ *
+ * @param source a null terminated string
+ * @param it pointer to an iterator on a prs_String list
+ * @return true if all items have been found in the string, otherwise false
+ */
+bool prs_computeItemsPosition(const char *source, struct ll_Iterator *it);
 
 void prs_freeStringItem(prs_StringItem *stringItem);
 

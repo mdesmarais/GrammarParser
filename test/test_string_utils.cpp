@@ -9,6 +9,26 @@ extern "C" {
 
 using Catch::Matchers::Equals;
 
+SCENARIO("Gets the number of digits from a given integer", "[string_utils]") {
+    GIVEN("0") {
+        THEN("It should return 1") {
+            REQUIRE(1 == str_numberLength(0));
+        }
+    }
+
+    GIVEN("A negative number with one digit") {
+        THEN("It should return 1") {
+            REQUIRE(1 == str_numberLength(2));
+        }
+    }
+
+    GIVEN("A positive number with 4 digits") {
+        THEN("If should return 4") {
+            REQUIRE(4 == str_numberLength(9634));
+        }
+    }
+}
+
 SCENARIO("Removes all whitespaces from a given string", "[string_utils]") {
     GIVEN("A string full of whitespaces") {
         std::string input = "     ";

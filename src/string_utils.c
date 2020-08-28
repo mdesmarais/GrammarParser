@@ -6,6 +6,24 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+int str_numberLength(int n) {
+    int length = 0;
+
+    if (n < 0) {
+        // If the number is negative then we need to take
+        // account of the minus sign.
+        ++length;
+        n = -n;
+    }
+
+    while (n >= 10) {
+        ++length;
+        n /= 10;
+    }
+
+    return length + 1;
+}
+
 size_t str_removeWhitespaces(char *dest, const char *source, size_t length) {
     assert(dest);
     assert(source);

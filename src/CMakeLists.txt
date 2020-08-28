@@ -1,5 +1,5 @@
 
-list(APPEND source_files formal_grammar.c hash_table.c linked_list.c log.c parser.c string_utils.c)
+list(APPEND source_files parser_errors.c formal_grammar.c hash_table.c linked_list.c log.c parser.c string_utils.c)
 
 add_library(parser_lib ${source_files})
 

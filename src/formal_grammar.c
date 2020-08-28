@@ -46,10 +46,12 @@ void fg_freeGrammar(fg_Grammar *g) {
     }                                                   \
 } while(0);
 
-prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenName) {
+prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, prs_StringItem *tokenNameItem) {
     assert(token);
     assert(it);
-    assert(tokenName);
+    assert(tokenNameItem);
+
+    const char *tokenName = tokenNameItem->item;
 
     token->name = calloc(strlen(tokenName) + 1, 1);
     strcpy(token->name, tokenName);
@@ -86,6 +88,7 @@ prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenN
         int extractedRanges = prs_extractRanges(&rangesToken->ranges, tokenValue + 1, strlen(tokenValue) - 2);
 
         if (extractedRanges <= 0) {
+            fg_freeToken(token);
             return -1;
         }
 
@@ -93,14 +96,12 @@ prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, const char *tokenN
     }
     else if (isalpha(*tokenValue) && isupper(*tokenValue)) {
         if (strcmp(tokenValue, tokenName) == 0) {
+            fg_freeToken(token);
             return FG_TOKEN_SELF_REF;
         }
 
-        char *symbol = calloc(strlen(tokenValue) + 1, 1);
-        strcpy(symbol, tokenValue);
-
         token->type = FG_REF_TOKEN;
-        token->value.refToken.symbol = symbol;
+        token->value.refToken.symbol = tokenValueItem;
     }
     else {
         fg_freeToken(token);
@@ -146,9 +147,6 @@ void fg_freeToken(fg_Token *token) {
             case FG_RANGE_TOKEN:
                 free(token->value.rangesToken.ranges);
                 break;
-            case FG_REF_TOKEN:
-                free(token->value.refToken.symbol);
-                break;
             case FG_STRING_TOKEN:
                 free(token->value.string);
                 break;
@@ -160,16 +158,12 @@ void fg_freeToken(fg_Token *token) {
     }
 }
 
-static void prItemDestructor(void *data, void *args) {
-    fg_PRItem *prItem = data;
-    fg_freePrItem(prItem);
-    free(prItem);
-}
-
-prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName) {
+prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, prs_StringItem *ruleNameItem) {
     assert(rule);
     assert(it);
-    assert(ruleName);
+    assert(ruleNameItem);
+
+    const char *ruleName = ruleNameItem->item;
 
     rule->name = calloc(strlen(ruleName) + 1, 1);
     strcpy(rule->name, ruleName);
@@ -189,10 +183,10 @@ prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName)
         }
 
         ll_LinkedList *productionRule = malloc(sizeof(*productionRule));
-        ll_createLinkedList(productionRule, prItemDestructor);
+        ll_createLinkedList(productionRule, (ll_DataDestructor*) free);
 
-        char *lastItem = NULL;
-        int errCode = fg_extractProductionRule(productionRule, it, currentItem, &lastItem);
+        prs_StringItem *lastStringItem = NULL;
+        int errCode = fg_extractProductionRule(productionRule, it, currentStringItem, &lastStringItem);
 
         if (errCode != PRS_OK) {
             free(productionRule);
@@ -203,7 +197,7 @@ prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, const char *ruleName)
         ll_pushBack(&rule->productionRuleList, productionRule);
         ++extractedProductionRules;
 
-        if (lastItem && *lastItem == ';') {
+        if (lastStringItem && *lastStringItem->item == ';') {
             hasEnd = true;
             break;
         }
@@ -241,66 +235,46 @@ void fg_freeRule(fg_Rule *rule) {
     }
 }
 
-prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, char *currentItem, char **pLastItem) {
+prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, prs_StringItem *currentStringItem, prs_StringItem **pLastStringItem) {
     assert(prItemList);
     assert(it);
-    assert(currentItem);
-    assert(pLastItem);
+    assert(currentStringItem);
+    assert(pLastStringItem);
 
-    char *item = currentItem;
-    char *lastItem = NULL;
+    prs_StringItem *lastStringItem = NULL;
 
     int extractedItems = 0;
 
     do {
+        const char *item = currentStringItem->item;
         if (*item == '|' || *item == ';') {
-            lastItem = item;
+            lastStringItem = currentStringItem;
             break;
+        }
+
+        if (!isalpha(*item)) {
+            ll_freeLinkedList(prItemList, NULL);
+
+            prs_setErrorState(currentStringItem);
+            return FG_PRITEM_UNKNOWN_TYPE;
         }
 
         fg_PRItem *prItem = malloc(sizeof(*prItem));
         memset(prItem, 0, sizeof(*prItem));
 
-        int errCode = fg_extractPrItem(prItem, item);
-
-        if (errCode != PRS_OK) {
-            ll_freeLinkedList(prItemList, NULL);
-            free(prItem);
-            return errCode;
-        }
+        prItem->type = (islower(*item)) ? FG_RULE_ITEM : FG_TOKEN_ITEM;
+        prItem->symbol = currentStringItem;
 
         ll_pushBack(prItemList, prItem);
         ++extractedItems;
-    } while (ll_iteratorHasNext(it) && (item = ((prs_StringItem*) ll_iteratorNext(it))->item));
+    } while (ll_iteratorHasNext(it) && (currentStringItem = ll_iteratorNext(it)));
 
     if (extractedItems == 0) {
+        log_debug("GROS CON");
         return FG_PR_EMPTY;
     }
 
-    *pLastItem = lastItem;
+    *pLastStringItem = lastStringItem;
 
     return PRS_OK;
-}
-
-prs_ErrCode fg_extractPrItem(fg_PRItem *prItem, const char *item) {
-    assert(prItem);
-    assert(item);
-
-    if (!isalpha(*item)) {
-        return FG_PRITEM_UNKNOWN_TYPE;
-    }
-
-    char *symbol = calloc(strlen(item) + 1, 1);
-    strcpy(symbol, item);
-    prItem->symbol = symbol;
-
-    prItem->type = (islower(*item)) ? FG_RULE_ITEM : FG_TOKEN_ITEM;
-
-    return PRS_OK;
-}
-
-void fg_freePrItem(fg_PRItem *prItem) {
-    if (prItem) {
-        free(prItem->symbol);
-    }
 }
