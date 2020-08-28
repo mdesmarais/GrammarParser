@@ -296,6 +296,28 @@ SCENARIO("Extract tokens and rules from a list of items", "[parser]") {
             REQUIRE(rule1);
             REQUIRE(g.entry == rule1);
         }
+
+        AND_WHEN("Parsing an existing rule") {
+            ll_freeLinkedList(&itemList, NULL);
+            fillItemList(&itemList, { "rule1", "=", "rule1", ";" });
+
+            int res = prs_parseGrammarItems(&g, &itemList);
+
+            THEN("It should return an error") {
+                REQUIRE(FG_RULE_EXISTS == res);
+            }
+        }
+
+        AND_WHEN("Parsing an existing token") {
+            ll_freeLinkedList(&itemList, NULL);
+            fillItemList(&itemList, { "TOKEN1", "=" ,"`already exists`", ";" });
+
+            int res = prs_parseGrammarItems(&g, &itemList);
+
+            THEN("it should return an error") {
+                REQUIRE(FG_TOKEN_EXISTS == res);
+            }
+        }
     }
 
     GIVEN("A list with an invalid token") {
@@ -430,5 +452,49 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
     }
 
     fg_freeGrammar(&g);
+    ll_freeLinkedList(&itemList, NULL);
+}
+
+SCENARIO("string items have a position (line, column) in a source string", "[parser]") {
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, (ll_DataDestructor*) prs_freeStringItem);
+
+    fillItemList(&itemList, { "TOKEN1", "`hello`", ";" });
+
+    ll_Iterator it = ll_createIterator(&itemList);
+
+    GIVEN("A random source string without any token or rule") {
+        const char *source = "hello world";
+
+        THEN("It should return false") {
+            REQUIRE_FALSE(prs_computeItemsPosition(source, &it));
+        }
+    }
+
+    GIVEN("A string with all items, separated by spaces and new lines") {
+        const char *source = " TOKEN1\n\n`hello`;";
+        bool res = prs_computeItemsPosition(source, &it);
+
+        THEN("It should return true") {
+            REQUIRE(res);
+        }
+
+        AND_THEN("Each string item's position should have been update") {
+            it = ll_createIterator(&itemList);
+
+            prs_StringItem *item = (prs_StringItem*) ll_iteratorNext(&it);
+            REQUIRE(1 == item->line);
+            REQUIRE(2 == item->column);
+
+            item = (prs_StringItem*) ll_iteratorNext(&it);
+            REQUIRE(3 == item->line);
+            REQUIRE(1 == item->column);
+
+            item = (prs_StringItem*) ll_iteratorNext(&it);
+            REQUIRE(3 == item->line);
+            REQUIRE(8 == item->column);
+        }
+    }
+
     ll_freeLinkedList(&itemList, NULL);
 }

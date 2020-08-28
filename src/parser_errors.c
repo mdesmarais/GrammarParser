@@ -19,11 +19,13 @@ static const char *errorMessages[] = {
         "Invalid value for token",
         "Unknown value type for token",
         "Self referencing is forbidden for token",
+        "Already existing token",
 
         "Empty rule",
         "Invalid rule",
         "Missing end marker for rule",
         "Missing value for rule",
+        "Already existing rule",
 
         "Unknown token symbol",
         "Unknown rule symbol",

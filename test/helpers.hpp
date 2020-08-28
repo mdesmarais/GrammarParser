@@ -4,9 +4,6 @@
 #include <string>
 #include <vector>
 
-// Macro used to get a char from a prs_StringItem with an iterator
-#define nextStringItem(it) ((prs_StringItem*) ll_iteratorNext((it)))->item
-
 struct ll_LinkedList;
 
 /**

@@ -368,12 +368,20 @@ prs_ErrCode prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
             int errCode = fg_extractToken(token, &it, stringItem);
 
             if (errCode != PRS_OK) {
+                fg_freeToken(token);
                 free(token);
                 prs_setErrorState(stringItem);
                 return errCode;
             }
 
-            // @TODO check if the token does not already exist
+            if (ht_getValue(&g->tokens, token->name) != NULL) {
+                fg_freeToken(token);
+                free(token);
+                prs_setErrorState(stringItem);
+
+                return FG_TOKEN_EXISTS;
+            }
+
             ht_insertElement(&g->tokens, token->name, token);
         }
         else {
@@ -393,7 +401,13 @@ prs_ErrCode prs_parseGrammarItems(fg_Grammar *g, ll_LinkedList *itemList) {
                 return errCode;
             }
 
-            // @TODO check if the rule does not already exist
+            if (ht_getValue(&g->rules, rule->name) != NULL) {
+                fg_freeRule(rule);
+                free(rule);
+                prs_setErrorState(stringItem);
+                return FG_RULE_EXISTS;
+            }
+
             ht_insertElement(&g->rules, rule->name, rule);
 
             if (!entryRule) {
