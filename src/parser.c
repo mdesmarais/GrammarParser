@@ -3,6 +3,7 @@
 #include "formal_grammar.h"
 #include "linked_list.h"
 #include "log.h"
+#include "set.h"
 #include "string_utils.h"
 
 #include <assert.h>
@@ -549,4 +550,38 @@ int prs_splitDelimiters(ll_Iterator *it, const char *delimiters) {
     }
 
     return extractedItems;
+}
+
+set_HashSet *prs_ruleFirsts(ht_Table *table, fg_Rule *rule) {
+    assert(table);
+    assert(rule);
+
+    set_HashSet *set = ht_getValue(table, rule);
+
+    if (set) {
+        return set;
+    }
+
+    set = malloc(sizeof(*set));
+    set_createSet(set, 10, NULL, NULL);
+    ht_insertElement(table, rule, set);
+
+    ll_Iterator prIt = ll_createIterator(&rule->productionRuleList);
+
+    while (ll_iteratorHasNext(&prIt)) {
+        ll_LinkedList *pr = ll_iteratorNext(&prIt);
+
+        fg_PRItem *prItem = pr->front->data;
+
+        switch (prItem->type) {
+            case FG_TOKEN_ITEM:
+                set_insertValue(set, prItem);
+                break;
+            case FG_RULE_ITEM:
+                set_union(set, prs_ruleFirsts(table, prItem->rule));
+                break;
+        }
+    }
+
+    return set;
 }

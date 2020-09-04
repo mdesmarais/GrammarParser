@@ -162,6 +162,25 @@ static size_t firstNonEmptyBucketIndex(ll_LinkedList *buckets, size_t offset, si
     return index;
 }
 
+void **ht_getValues(ht_Table *table) {
+    assert(table);
+
+    void **values = malloc(sizeof(*values) * table->size);
+    void **current = values;
+
+    ht_Iterator it;
+    ht_createIterator(&it, table);
+
+    while (ht_iteratorHasNext(&it)) {
+        ht_KVPair *pair = ht_iteratorNext(&it);
+
+        *current = pair->value;
+        ++current;
+    }
+
+    return values;
+}
+
 void ht_createIterator(ht_Iterator *it, ht_Table *table) {
     assert(it);
     assert(table);

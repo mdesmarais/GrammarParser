@@ -114,6 +114,16 @@ uint32_t ht_hashString(const void *data);
 void *ht_getValue(ht_Table *table, const void *key);
 
 /**
+ * Gathers all values into an array.
+ *
+ * The user has the responsability to free the array.
+ *
+ * @param table a pointer to a hash table
+ * @return an array of values
+ */
+void **ht_getValues(ht_Table *table);
+
+/**
  * Creates an iterator on a given hash table.
  *
  * The hash table must have a positive capacity.

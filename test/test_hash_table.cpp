@@ -126,6 +126,18 @@ SCENARIO("A value can be retrieved by its key", "[hash_table]") {
             }
         }
 
+        WHEN("Gathering values into an array") {
+            int **values = reinterpret_cast<int **>(ht_getValues(&table));
+
+            THEN("It should contain v1, v2 and v3") {
+                REQUIRE(&v1 == *values);
+                REQUIRE(&v2 == values[1]);
+                REQUIRE(&v3 == values[2]);
+            }
+
+            free(values);
+        }
+
         ht_freeTable(&table);
     }
 }
