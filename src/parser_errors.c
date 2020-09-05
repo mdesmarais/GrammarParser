@@ -32,7 +32,9 @@ static const char *errorMessages[] = {
         "Unknown item",
 
         "Empty production rule",
-        "Unknown production rule item type"
+        "Unknown production rule item type",
+        "Missing end marker for string block",
+        "Empty string block"
 };
 
 size_t prs_getErrorMessage(char *buffer, size_t capacity, prs_ErrCode errCode) {

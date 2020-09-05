@@ -157,6 +157,11 @@ void fg_freeToken(fg_Token *token) {
     }
 }
 
+static void prItemDestructor(fg_PRItem *prItem) {
+    fg_freePRItem(prItem);
+    free(prItem);
+}
+
 prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, prs_StringItem *ruleNameItem) {
     assert(rule);
     assert(it);
@@ -183,7 +188,7 @@ prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, prs_StringItem *ruleN
         }
 
         ll_LinkedList *productionRule = malloc(sizeof(*productionRule));
-        ll_createLinkedList(productionRule, (ll_DataDestructor*) free);
+        ll_createLinkedList(productionRule, (ll_DataDestructor*) prItemDestructor);
 
         prs_StringItem *lastStringItem = NULL;
         int errCode = fg_extractProductionRule(productionRule, it, currentStringItem, &lastStringItem);
@@ -252,18 +257,18 @@ prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it,
             break;
         }
 
-        if (!isalpha(*item)) {
-            ll_freeLinkedList(prItemList, NULL);
-
-            prs_setErrorState(currentStringItem);
-            return FG_PRITEM_UNKNOWN_TYPE;
-        }
-
         fg_PRItem *prItem = malloc(sizeof(*prItem));
         memset(prItem, 0, sizeof(*prItem));
 
-        prItem->type = (islower(*item)) ? FG_RULE_ITEM : FG_TOKEN_ITEM;
-        prItem->symbol = currentStringItem;
+        prs_ErrCode errCode = fg_extractPRItem(prItem, currentStringItem);
+
+        if (errCode != PRS_OK) {
+            prs_setErrorState(currentStringItem);
+            fg_freePRItem(prItem);
+            free(prItem);
+            ll_freeLinkedList(prItemList, NULL);
+            return errCode;
+        }
 
         ll_pushBack(prItemList, prItem);
         ++extractedItems;
@@ -276,4 +281,49 @@ prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it,
     *pLastStringItem = lastStringItem;
 
     return PRS_OK;
+}
+
+prs_ErrCode fg_extractPRItem(fg_PRItem *prItem, prs_StringItem *stringItem) {
+    assert(prItem);
+    assert(stringItem);
+
+    const char *item = stringItem->item;
+
+    if (*item == '`') {
+        size_t blockLength = strlen(item);
+
+        if (blockLength < 2 || !strchr(item + 1, '`')) {
+            return FG_STRING_BLOCK_MISSING_END;
+        }
+
+        if (blockLength == 2) {
+            return FG_STRING_BLOCK_EMPTY;
+        }
+
+        prItem->type = FG_STRING_ITEM;
+        prItem->value.string = calloc(blockLength + 1, 1);
+        strncpy(prItem->value.string, item + 1, blockLength - 2);
+    }
+    else if (!isalpha(*item)) {
+        return FG_PRITEM_UNKNOWN_TYPE;
+    }
+    else {
+        prItem->type = (islower(*item)) ? FG_RULE_ITEM : FG_TOKEN_ITEM;
+        prItem->symbol = stringItem;
+    }
+
+    return PRS_OK;
+}
+
+void fg_freePRItem(fg_PRItem *prItem) {
+    if (prItem) {
+        switch (prItem->type) {
+            case FG_STRING_ITEM:
+                free(prItem->value.string);
+                break;
+            default:
+                prItem->symbol = NULL;
+                break;
+        }
+    }
 }

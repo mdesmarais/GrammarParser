@@ -34,6 +34,9 @@ typedef enum prs_ErrCode {
 
     FG_PRITEM_UNKNOWN_TYPE,
 
+    FG_STRING_BLOCK_MISSING_END,
+    FG_STRING_BLOCK_EMPTY,
+
     PRS_MAX_CODE_NUMBER
 } prs_ErrCode;
 

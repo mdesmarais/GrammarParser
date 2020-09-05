@@ -46,14 +46,20 @@ typedef struct fg_Rule {
 
 typedef enum fg_PrItemType {
     FG_RULE_ITEM,
+    FG_STRING_ITEM,
     FG_TOKEN_ITEM
 } fg_PrItemType;
 
+union fg_PRItemValue {
+    fg_Rule *rule;
+    char *string;
+    fg_Token *token;
+};
+
 typedef struct fg_PRItem {
     fg_PrItemType type;
-    fg_Rule *rule;
-    fg_Token *token;
     prs_StringItem *symbol;
+    union fg_PRItemValue value;
 } fg_PRItem;
 
 typedef struct fg_Grammar {
@@ -93,5 +99,8 @@ void fg_createRule(fg_Rule *rule);
 void fg_freeRule(fg_Rule *rule);
 
 prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, prs_StringItem *currentStringItem, prs_StringItem **pLastStringItem);
+
+prs_ErrCode fg_extractPRItem(fg_PRItem *prItem, prs_StringItem *stringItem);
+void fg_freePRItem(fg_PRItem *prItem);
 
 #endif //FORMAL_GRAMMAR_H

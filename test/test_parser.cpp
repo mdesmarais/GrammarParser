@@ -410,11 +410,11 @@ SCENARIO("symbols resolution is used to allow recursive rules", "[parser]") {
 
                 // Testing recursive rule
                 auto prItem1 = (fg_PRItem*) ll_iteratorNext(&it);
-                REQUIRE(rule1 == prItem1->rule);
+                REQUIRE(rule1 == prItem1->value.rule);
 
                 auto prItem2 = (fg_PRItem*) ll_iteratorNext(&it);
                 auto token1 = (fg_Token*) ht_getValue(&g.tokens, "TOKEN1");
-                REQUIRE(token1 == prItem2->token);
+                REQUIRE(token1 == prItem2->value.token);
             }
         }
     }

@@ -119,6 +119,68 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
     ll_freeLinkedList(&itemList, nullptr);
 }
 
+SCENARIO("A production rule item has a type and a value (or a reference)", "[formal_grammar]") {
+    fg_PRItem prItem;
+    memset(&prItem, 0, sizeof(prItem));
+
+    GIVEN("An unknown item type") {
+        prs_StringItem stringItem = { .item = (char*) "@token", .line = 0, .column = 0 };
+        int res = fg_extractPRItem(&prItem, &stringItem);
+
+        THEN("It should return an error") {
+            REQUIRE(FG_PRITEM_UNKNOWN_TYPE == res);
+        }
+    }
+
+    GIVEN("A reference to a rule") {
+        prs_StringItem stringItem = { .item = (char*) "rule1", .line = 0, .column = 0 };
+        int res = fg_extractPRItem(&prItem, &stringItem);
+
+        THEN("It should return ok") {
+            REQUIRE(PRS_OK == res);
+        }
+
+        AND_THEN("prItem type and symbol fields should have been updated") {
+            REQUIRE(FG_RULE_ITEM == prItem.type);
+            REQUIRE_THAT("rule1", Equals(prItem.symbol->item));
+        }
+    }
+
+    GIVEN("A string block without the end marker") {
+        prs_StringItem stringItem = { .item = (char*) "`hello", .line = 0, .column = 0 };
+        int res = fg_extractPRItem(&prItem, &stringItem);
+
+        THEN("It should return an error") {
+            REQUIRE(FG_STRING_BLOCK_MISSING_END == res);
+        }
+    }
+
+    GIVEN("An empty string block (with start and end markers)") {
+        prs_StringItem stringItem = { .item = (char*) "``", .line = 0, .column = 0 };
+        int res = fg_extractPRItem(&prItem, &stringItem);
+
+        THEN("It should return an error") {
+            REQUIRE(FG_STRING_BLOCK_EMPTY == res);
+        }
+    }
+
+    GIVEN("A valid string block") {
+        prs_StringItem stringItem = { .item = (char*) "`hello`", .line = 0, .column = 0 };
+        int res = fg_extractPRItem(&prItem, &stringItem);
+
+        THEN("It should return ok") {
+            REQUIRE(PRS_OK == res);
+        }
+
+        AND_THEN("prItem type and value fields should have been updated") {
+            REQUIRE(FG_STRING_ITEM == prItem.type);
+            REQUIRE_THAT("hello", Equals(prItem.value.string));
+        }
+    }
+
+    fg_freePRItem(&prItem);
+}
+
 SCENARIO("A production rule is made by one or more items (token or rule)", "[formal_grammar]") {
     ll_LinkedList itemList;
     ll_createLinkedList(&itemList, (ll_DataDestructor*) prs_freeStringItem);

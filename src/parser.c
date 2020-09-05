@@ -442,7 +442,7 @@ static void resolveProductionRulesSymbols(void *data, void *args) {
                 break;
             }
 
-            prItem->rule = refRule;
+            prItem->value.rule = refRule;
         }
         else if (prItem->type == FG_TOKEN_ITEM) {
             fg_Token *refToken = ht_getValue(&resolverArg->g->tokens, prItem->symbol->item);
@@ -453,7 +453,7 @@ static void resolveProductionRulesSymbols(void *data, void *args) {
                 break;
             }
 
-            prItem->token = refToken;
+            prItem->value.token = refToken;
         }
     }
 }
@@ -574,11 +574,12 @@ set_HashSet *prs_ruleFirsts(ht_Table *table, fg_Rule *rule) {
         fg_PRItem *prItem = pr->front->data;
 
         switch (prItem->type) {
+            case FG_RULE_ITEM:
+                set_union(set, prs_ruleFirsts(table, prItem->value.rule));
+                break;
+            case FG_STRING_ITEM:
             case FG_TOKEN_ITEM:
                 set_insertValue(set, prItem);
-                break;
-            case FG_RULE_ITEM:
-                set_union(set, prs_ruleFirsts(table, prItem->rule));
                 break;
         }
     }
