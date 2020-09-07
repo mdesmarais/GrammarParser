@@ -65,6 +65,8 @@ void ht_freeTable(ht_Table *table);
 /**
  * Inserts a pair (key/value) into the table.
  *
+ * The key and the value can't be NULL.
+ *
  * This hash table uses separate chaining to manage collisions.
  * If a pair will same hash already exists, then the new one will be added
  * at the end of the same bucket.
@@ -115,7 +117,8 @@ void *ht_getValue(ht_Table *table, const void *key);
 
 /**
  * Gathers all values into an array.
- *
+ * The array will have the same number of entries as in the table,
+ * plus an additional NULL item that indicates the end of the array.
  * The user has the responsability to free the array.
  *
  * @param table a pointer to a hash table

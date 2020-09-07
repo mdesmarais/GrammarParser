@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 extern "C" {
-#include <linked_list.h>
+#include <collections/linked_list.h>
 }
 
 SCENARIO("Items can be added at the end of the list individually", "[linked_list]") {

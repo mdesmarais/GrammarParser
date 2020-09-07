@@ -1,9 +1,9 @@
 #include "parser.h"
 
-#include "parser_errors.h"
-#include "formal_grammar.h"
+#include "collections/linked_list.h"
 #include "log.h"
-#include "linked_list.h"
+#include "formal_grammar.h"
+#include "parser_errors.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,6 +58,27 @@ int main() {
         log_error(errMsg);
         goto clean;
     }
+
+    fg_Rule **rules = (fg_Rule**) ht_getValues(&g.rules);
+    ht_Table firsts;
+    ht_createTable(&firsts, 10, (ht_HashFunction*) prs_hashRule, NULL, NULL);
+
+    for (size_t i = 0;i < g.rules.size;++i) {
+        fg_Rule *rule = rules[i];
+
+        set_HashSet *pwet = prs_ruleFirsts(&firsts, rule);
+        printf("Firsts(%s) = { ", rule->name);
+
+        set_Iterator it;
+        set_createIterator(&it, &pwet);
+
+        while (set_iteratorHasNext(&it)) {
+            // @TODO use a structure to store a string or a range
+        }
+    }
+
+    ht_freeTable(&firsts);
+    free(rules);
 
 clean:
     free(grammarBuffer);

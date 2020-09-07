@@ -1,10 +1,11 @@
 #ifndef FORMAL_GRAMMAR_H
 #define FORMAL_GRAMMAR_H
 
-#include "hash_table.h"
-#include "linked_list.h"
+#include "collections/hash_table.h"
+#include "collections/linked_list.h"
 #include "parser.h"
 #include "parser_errors.h"
+#include "range.h"
 
 #include <string.h>
 

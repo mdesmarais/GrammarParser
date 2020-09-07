@@ -6,13 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "collections/set.h"
 #include "parser_errors.h"
-
-#define PRS_ASCII_DIGIT_START 48
-#define PRS_ASCII_DIGIT_END 57
-
-#define PRS_ASCII_LETTER_START 97
-#define PRS_ASCII_LETTER_END 122
 
 typedef struct prs_StringItem {
     char *item;
@@ -20,28 +15,12 @@ typedef struct prs_StringItem {
     int column;
 } prs_StringItem;
 
-typedef enum prs_RangeQuantifier {
-    PRS_PLUS_QUANTIFIER,
-    PRS_QMARK_QUANTIFIER
-} prs_RangeQuantifier;
-
-typedef struct prs_Range {
-    bool uppercaseLetter;
-    uint8_t start;
-    uint8_t end;
-} prs_Range;
-
 struct ll_LinkedList;
 struct ll_Iterator;
 
 struct fg_Grammar;
-
-prs_ErrCode prs_createDigitRange(prs_Range *range, char n1, char n2);
-prs_ErrCode prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase);
-bool prs_matchInRange(prs_Range *range, char c, bool isLetter);
-
-prs_ErrCode prs_extractRange(prs_Range *range, const char *input);
-prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t length);
+struct fg_PRItem;
+struct fg_Rule;
 
 /**
  * Extracts items from a given raw grammar.
@@ -107,5 +86,10 @@ ssize_t prs_readGrammar(FILE *stream, char **pBuffer);
  * @return number of added elements into the list
  */
 int prs_splitDelimiters(struct ll_Iterator *it, const char *delimiters);
+
+set_HashSet *prs_ruleFirsts(struct ht_Table *table, struct fg_Rule *rule);
+
+uint32_t prs_hashRule(struct fg_Rule *rule);
+uint32_t prs_hashPRItem(struct fg_PRItem *prItem);
 
 #endif // PARSER_H

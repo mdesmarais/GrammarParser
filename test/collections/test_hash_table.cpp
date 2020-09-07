@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 
 extern "C" {
-#include <hash_table.h>
-#include <linked_list.h>
+#include <collections/hash_table.h>
+#include <collections/linked_list.h>
 }
 
 SCENARIO("A hash table is created with an initial capacity", "[hash_table]") {

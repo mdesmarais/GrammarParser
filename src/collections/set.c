@@ -6,8 +6,8 @@
 
 static int SENTINEL = 1;
 
-void set_createSet(set_HashSet *set, size_t initialCapacity, ht_KeyComparator *comparator, set_ElementDestructor *destructor) {
-    ht_createTable(set, initialCapacity, ht_hashString, comparator, (ht_KVPairDestructor*) destructor);
+void set_createSet(set_HashSet *set, size_t initialCapacity, ht_HashFunction *hashFunction, ht_KeyComparator *comparator, set_ElementDestructor *destructor) {
+    ht_createTable(set, initialCapacity, hashFunction, comparator, (ht_KVPairDestructor*) destructor);
 }
 
 void set_freeSet(set_HashSet *set) {

@@ -1,136 +1,16 @@
 #include "parser.h"
 
+#include "collections/hash_table.h"
+#include "collections/linked_list.h"
 #include "formal_grammar.h"
-#include "linked_list.h"
 #include "log.h"
-#include "set.h"
+#include "range.h"
 #include "string_utils.h"
 
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-static prs_ErrCode createRange(prs_Range *range, uint8_t x, uint8_t y, uint8_t asciiStart, uint8_t asciiEnd) {
-    assert(range);
-
-    if (x > y) {
-        return PRS_INVALID_RANGE;
-    }
-
-    if (x < asciiStart || y > asciiEnd) {
-        return PRS_INVALID_CHAR_RANGE;
-    }
-
-    range->start = x;
-    range->end = y + 1;
-
-    return PRS_OK;
-}
-
-prs_ErrCode prs_createDigitRange(prs_Range *range, char n1, char n2) {
-    assert(range);
-
-    return createRange(range, n1, n2, PRS_ASCII_DIGIT_START, PRS_ASCII_DIGIT_END);
-}
-
-prs_ErrCode prs_createLetterRange(prs_Range *range, char c1, char c2, bool uppercase) {
-    assert(range);
-
-    range->uppercaseLetter = uppercase;
-
-    if (uppercase) {
-        c1 = tolower(c1);
-        c2 = tolower(c2);
-    }
-
-    return createRange(range, c1, c2, PRS_ASCII_LETTER_START, PRS_ASCII_LETTER_END);
-}
-
-/*bool lex_matchInRange(lex_Range *range, char c, bool isLetter) {
-    assert(range);
-
-    for (const char *curr = range->start; curr != range->end; ++curr) {
-        if ((isLetter && range->uppercaseLetter && toupper(*curr) == c) || *curr == c) {
-            return true;
-        }
-    }
-
-    return false;
-} */
-
-prs_ErrCode prs_extractRange(prs_Range *range, const char *input) {
-    assert(range);
-    assert(input);
-
-    char c1, c2;
-
-    int extractedElements = sscanf(input, "%c-%c", &c1, &c2);
-
-    if (extractedElements != 2) {
-        return PRS_INVALID_RANGE_PATTERN;
-    }
-
-    if (isalpha(c1) && isalpha(c2)) {
-        return prs_createLetterRange(range, c1, c2, isupper(c1) && isupper(c2));
-    }
-    else if (isdigit(c1) && isdigit(c2)) {
-        return prs_createDigitRange(range, c1, c2);
-    }
-    else {
-        return PRS_INVALID_RANGE_PATTERN;
-    }
-}
-
-prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t length) {
-    assert(pRanges);
-    assert(input);
-
-    char *buffer = calloc(length, 1);
-
-    if (!buffer) {
-        return -1;
-    }
-
-    size_t lengthWithoutSpaces = str_removeWhitespaces(buffer, input, length);
-
-    if (lengthWithoutSpaces == 0) {
-        free(buffer);
-        return 0;
-    }
-
-    if (lengthWithoutSpaces % 3 != 0) {
-        free(buffer);
-        return PRS_INVALID_RANGE_PATTERN;
-    }
-
-    size_t rangesNumber = lengthWithoutSpaces / 3;
-    prs_Range *ranges = calloc(rangesNumber, sizeof(*ranges));
-
-    if (!ranges) {
-        free(buffer);
-        return -1;
-    }
-
-    const char *pos = input;
-    size_t i;
-
-    for (i = 0;i < rangesNumber;++i) {
-        prs_ErrCode errCode = prs_extractRange(ranges + i, pos);
-
-        if (errCode != PRS_OK) {
-            free(buffer);
-            free(ranges);
-            return errCode;
-        }
-        pos += 3;
-    }
-
-    free(buffer);
-    *pRanges = ranges;
-
-    return i;
-}
 
 /**
  * Splits a string into prs_StringItem items and inserts them
@@ -552,6 +432,20 @@ int prs_splitDelimiters(ll_Iterator *it, const char *delimiters) {
     return extractedItems;
 }
 
+void poulait(set_HashSet *firsts, fg_Token *token) {
+    assert(firsts);
+    assert(token);
+
+    switch (token->type) {
+        case FG_REF_TOKEN:
+            return poulait(firsts, token->value.refToken.token);
+        case FG_RANGE_TOKEN:
+        case FG_STRING_TOKEN:
+            set_insertValue(firsts, token);
+            break;
+    }
+}
+
 set_HashSet *prs_ruleFirsts(ht_Table *table, fg_Rule *rule) {
     assert(table);
     assert(rule);
@@ -563,7 +457,7 @@ set_HashSet *prs_ruleFirsts(ht_Table *table, fg_Rule *rule) {
     }
 
     set = malloc(sizeof(*set));
-    set_createSet(set, 10, NULL, NULL);
+    set_createSet(set, 10, (ht_HashFunction*) prs_hashPRItem, NULL, NULL);
     ht_insertElement(table, rule, set);
 
     ll_Iterator prIt = ll_createIterator(&rule->productionRuleList);
@@ -577,12 +471,43 @@ set_HashSet *prs_ruleFirsts(ht_Table *table, fg_Rule *rule) {
             case FG_RULE_ITEM:
                 set_union(set, prs_ruleFirsts(table, prItem->value.rule));
                 break;
-            case FG_STRING_ITEM:
+            case FG_STRING_ITEM: {
+                fg_Token *token = malloc(sizeof(*token));
+                token->name = NULL;
+                token->type = FG_STRING_TOKEN;
+
+                char *string = calloc(strlen(prItem->value.string) + 1, 1);
+                strcpy(string, prItem->value.string);
+
+                token->value.string = string;
+                break;
+            }
             case FG_TOKEN_ITEM:
-                set_insertValue(set, prItem);
+                poulait(set, prItem->value.token);
+                if (prItem->value.token->quantifier == PRS_STAR_QUANTIFIER) {
+                    
+                }
                 break;
         }
     }
 
     return set;
+}
+
+uint32_t prs_hashRule(fg_Rule *rule) {
+    assert(rule);
+
+    return ht_hashString(rule->name);
+}
+
+uint32_t prs_hashPRItem(struct fg_PRItem *prItem) {
+    assert(prItem);
+
+    switch (prItem->type) {
+        case FG_STRING_ITEM:
+            return ht_hashString(prItem->value.string);
+        case FG_RULE_ITEM:
+        case FG_TOKEN_ITEM:
+            return ht_hashString(prItem->symbol);
+    }
 }

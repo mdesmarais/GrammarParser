@@ -124,6 +124,10 @@ prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, prs_StringItem *to
             quantifier = PRS_QMARK_QUANTIFIER;
             expectCharFromIt(it, ';', FG_TOKEN_MISSING_END);
             break;
+        case '*':
+            quantifier = PRS_STAR_QUANTIFIER;
+            expectCharFromIt(it, ';', FG_TOKEN_MISSING_END);
+            break;
         case ';':
             break;
         default:

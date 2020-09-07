@@ -5,7 +5,7 @@
 extern "C" {
 #include <parser_errors.h>
 #include <formal_grammar.h>
-#include <linked_list.h>
+#include <collections/linked_list.h>
 }
 
 using Catch::Matchers::Equals;

@@ -1,6 +1,6 @@
 #include "string_utils.h"
 
-#include "linked_list.h"
+#include "collections/linked_list.h"
 
 #include <assert.h>
 #include <ctype.h>

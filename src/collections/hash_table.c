@@ -3,7 +3,6 @@
 #include "linked_list.h"
 
 #include <assert.h>
-#include <stdarg.h>
 #include <stdlib.h>
 
 static void pairDestructor(void *data, void *args) {
@@ -165,7 +164,9 @@ static size_t firstNonEmptyBucketIndex(ll_LinkedList *buckets, size_t offset, si
 void **ht_getValues(ht_Table *table) {
     assert(table);
 
-    void **values = malloc(sizeof(*values) * table->size);
+    // We have one additional item to facilitate the iteration
+    // over the items. The item will be NULL.
+    void **values = malloc(sizeof(*values) * (table->size + 1));
     void **current = values;
 
     ht_Iterator it;
@@ -177,6 +178,8 @@ void **ht_getValues(ht_Table *table) {
         *current = pair->value;
         ++current;
     }
+
+    *(values + table->size) = NULL;
 
     return values;
 }
