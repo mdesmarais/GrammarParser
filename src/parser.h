@@ -8,12 +8,28 @@
 
 #include "collections/set.h"
 #include "parser_errors.h"
+#include "range.h"
 
 typedef struct prs_StringItem {
     char *item;
     int line;
     int column;
 } prs_StringItem;
+
+typedef enum prs_ParserItemType {
+    PRS_RANGE_ITEM,
+    PRS_STRING_ITEM
+} prs_ParserItemType;
+
+union prs_ParserItemValue {
+    prs_RangeArray rangeArray;
+    char *string;
+};
+
+typedef struct prs_ParserItem {
+    prs_ParserItemType type;
+    union prs_ParserItemValue value;
+} prs_ParserItem;
 
 struct ll_LinkedList;
 struct ll_Iterator;
@@ -87,9 +103,13 @@ ssize_t prs_readGrammar(FILE *stream, char **pBuffer);
  */
 int prs_splitDelimiters(struct ll_Iterator *it, const char *delimiters);
 
-set_HashSet *prs_ruleFirsts(struct ht_Table *table, struct fg_Rule *rule);
+set_HashSet *prs_first(struct ht_Table *table, struct fg_PRItem *prItem);
 
 uint32_t prs_hashRule(struct fg_Rule *rule);
+uint32_t prs_hashParserItem(prs_ParserItem *parserItem);
 uint32_t prs_hashPRItem(struct fg_PRItem *prItem);
+
+void prs_createStringParserItem(prs_ParserItem *parserItem, char *string);
+void prs_freeParserItem(prs_ParserItem *parserItem);
 
 #endif // PARSER_H

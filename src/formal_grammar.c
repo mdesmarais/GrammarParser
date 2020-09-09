@@ -81,17 +81,13 @@ prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, prs_StringItem *to
     else if (*tokenValue == '[') {
         token->type = FG_RANGE_TOKEN;
 
-        struct fg_RangesToken *rangesToken = &token->value.rangesToken;
-
         // lex_extractRanges expects a string without square brackets : [...]
-        int extractedRanges = prs_extractRanges(&rangesToken->ranges, tokenValue + 1, strlen(tokenValue) - 2);
+        prs_ErrCode errCode = prs_extractRanges(&token->value.rangeArray, tokenValue + 1, strlen(tokenValue) - 2);
 
-        if (extractedRanges <= 0) {
+        if (errCode != PRS_OK) {
             fg_freeToken(token);
-            return -1;
+            return errCode;
         }
-
-        rangesToken->rangesNumber = extractedRanges;
     }
     else if (isalpha(*tokenValue) && isupper(*tokenValue)) {
         if (strcmp(tokenValue, tokenName) == 0) {
@@ -148,7 +144,7 @@ void fg_freeToken(fg_Token *token) {
 
         switch (token->type) {
             case FG_RANGE_TOKEN:
-                free(token->value.rangesToken.ranges);
+                prs_freeRangeArray(&token->value.rangeArray);
                 break;
             case FG_STRING_TOKEN:
                 free(token->value.string);

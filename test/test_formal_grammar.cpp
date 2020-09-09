@@ -79,9 +79,9 @@ SCENARIO("A token can be extracted from a list of items", "[formal_grammar]") {
             REQUIRE(PRS_OK == res);
 
             AND_THEN("ranges pointer in token structure should have been updated") {
-                struct fg_RangesToken *rangesToken = &token.value.rangesToken;
-                REQUIRE(2 == rangesToken->rangesNumber);
-                REQUIRE(rangesToken->ranges);
+                prs_RangeArray *rangeArray = &token.value.rangeArray;
+                REQUIRE(2 == rangeArray->size);
+                REQUIRE(rangeArray->ranges);
             }
         }
     }

@@ -1,5 +1,7 @@
 #include <catch2/catch.hpp>
 
+#include <cstring>
+
 extern "C" {
 #include <range.h>
 }
@@ -122,58 +124,64 @@ SCENARIO("A range is made by two characters (alpha or digit) and a dash", "[rang
 }
 
 SCENARIO("A range block ([...]) can contain several ranges", "[range]") {
-    prs_Range *ranges = nullptr;
+    prs_RangeArray rangeArray;
+    memset(&rangeArray, 0, sizeof(rangeArray));
 
     GIVEN("An empty string") {
         std::string input;
+        prs_ErrCode res = prs_extractRanges(&rangeArray, input.c_str(), input.size());
 
-        THEN("It should return 0") {
-            REQUIRE(0 == prs_extractRanges(&ranges, input.c_str(), input.size()));
+        THEN("It should return ok") {
+            REQUIRE(PRS_OK == res);
+        }
 
-            AND_THEN("The input pointer should remain unchanged (nullptr)") {
-                REQUIRE_FALSE(ranges);
-            }
+        AND_THEN("The array should still be empty") {
+            REQUIRE_FALSE(rangeArray.ranges);
+            REQUIRE(0 == rangeArray.size);
         }
     }
 
     GIVEN("A string with 3 ranges") {
         std::string input = "a-zA-Z0-9";
+        prs_ErrCode res = prs_extractRanges(&rangeArray, input.c_str(), input.size());
 
-        THEN("It should return 3") {
-            REQUIRE(3 == prs_extractRanges(&ranges, input.c_str(), input.size()));
+        THEN("It should return ok") {
+            REQUIRE(PRS_OK == res);
+        }
 
-            AND_THEN("The input pointer should have been modified") {
-                REQUIRE(ranges);
-            }
+        AND_THEN("The array should contain 3 ranges") {
+            REQUIRE(rangeArray.ranges);
+            REQUIRE(3 == rangeArray.size);
         }
     }
 
     GIVEN("A string with 2 valid patterns and one invalid") {
         std::string input = "a-z@-d1-3";
-        int res = prs_extractRanges(&ranges, input.c_str(), input.size());
+        prs_ErrCode res = prs_extractRanges(&rangeArray, input.c_str(), input.size());
 
         THEN("It should return an error") {
             REQUIRE(PRS_INVALID_RANGE_PATTERN == res);
         }
 
         AND_THEN("The input pointer should remain unchanged (nullptr)") {
-            REQUIRE_FALSE(ranges);
+            REQUIRE_FALSE(rangeArray.ranges);
+            REQUIRE(0 == rangeArray.size);
         }
     }
 
     GIVEN("A string with one pattern and an additional char") {
         std::string input = "a-zb";
-        int res = prs_extractRanges(&ranges, input.c_str(), input.size());
+        int res = prs_extractRanges(&rangeArray, input.c_str(), input.size());
 
         THEN("It should return an error") {
             REQUIRE(PRS_INVALID_RANGE_PATTERN == res);
         }
 
         AND_THEN("The input pointer should remain unchanged (nullptr)") {
-            REQUIRE_FALSE(ranges);
+            REQUIRE_FALSE(rangeArray.ranges);
+            REQUIRE(0 == rangeArray.size);
         }
     }
 
-    free(ranges);
-    ranges = nullptr;
+    prs_freeRangeArray(&rangeArray);
 }

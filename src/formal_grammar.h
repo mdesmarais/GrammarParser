@@ -15,11 +15,6 @@ typedef enum fg_TokenType {
     FG_STRING_TOKEN
 } fg_TokenType;
 
-struct fg_RangesToken {
-    prs_Range *ranges;
-    size_t rangesNumber;
-};
-
 struct fg_Token;
 
 struct fg_RefToken {
@@ -28,7 +23,7 @@ struct fg_RefToken {
 };
 
 union fg_TokenValue {
-    struct fg_RangesToken rangesToken;
+    prs_RangeArray rangeArray;
     struct fg_RefToken refToken;
     char *string;
 };

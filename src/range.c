@@ -83,21 +83,20 @@ prs_ErrCode prs_extractRange(prs_Range *range, const char *input) {
     }
 }
 
-prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t length) {
-    assert(pRanges);
+prs_ErrCode prs_extractRanges(prs_RangeArray *rangeArray, const char *input, size_t length) {
+    assert(rangeArray);
     assert(input);
 
-    char *buffer = calloc(length, 1);
-
-    if (!buffer) {
-        return -1;
+    if (length == 0) {
+        return PRS_OK;
     }
+
+    char *buffer = calloc(length, 1);
 
     size_t lengthWithoutSpaces = str_removeWhitespaces(buffer, input, length);
 
     if (lengthWithoutSpaces == 0) {
-        free(buffer);
-        return 0;
+        return PRS_OK;
     }
 
     if (lengthWithoutSpaces % 3 != 0) {
@@ -107,11 +106,6 @@ prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t len
 
     size_t rangesNumber = lengthWithoutSpaces / 3;
     prs_Range *ranges = calloc(rangesNumber, sizeof(*ranges));
-
-    if (!ranges) {
-        free(buffer);
-        return -1;
-    }
 
     const char *pos = input;
     size_t i;
@@ -124,11 +118,22 @@ prs_ErrCode prs_extractRanges(prs_Range **pRanges, const char *input, size_t len
             free(ranges);
             return errCode;
         }
+
         pos += 3;
     }
 
     free(buffer);
-    *pRanges = ranges;
 
-    return i;
+    rangeArray->ranges = ranges;
+    rangeArray->size = i;
+
+    return PRS_OK;
+}
+
+void prs_freeRangeArray(prs_RangeArray *rangeArray) {
+    if (rangeArray) {
+        free(rangeArray->ranges);
+        rangeArray->ranges = NULL;
+        rangeArray->size = 0;
+    }
 }

@@ -317,3 +317,29 @@ SCENARIO("string items have a position (line, column) in a source string", "[par
 
     ll_freeLinkedList(&itemList, nullptr);
 }
+
+SCENARIO("Computes a set of probable first terminals", "[parser]") {
+    fg_Grammar g;
+    fg_createGrammar(&g);
+
+    ll_LinkedList itemList;
+    ll_createLinkedList(&itemList, (ll_DataDestructor*) prs_freeStringItem);
+
+    fillItemList(&itemList, { "%s", "=", "f", "|", "`(`", "s", "`+`", "f", "`)`", ";", "%f", "=", "`1`", ";" });
+    REQUIRE(PRS_OK == prs_parseGrammarItems(&g, &itemList));
+    REQUIRE(PRS_OK == prs_resolveSymbols(&g));
+
+    GIVEN("An empty hash table") {
+        ht_Table table;
+
+        WHEN("Computing first terminals for production rule s->f") {
+            fg_Rule *sRule = (fg_Rule *) ht_getValue(&g.rules, "s");
+
+            fg_PRItem *prItem = (fg_PRItem *) sRule->productionRuleList.front->data;
+            // @TODO to finish
+        }
+    }
+
+    ll_freeLinkedList(&itemList, NULL);
+    fg_freeGrammar(&g);
+}

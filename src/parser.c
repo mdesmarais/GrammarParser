@@ -4,7 +4,6 @@
 #include "collections/linked_list.h"
 #include "formal_grammar.h"
 #include "log.h"
-#include "range.h"
 #include "string_utils.h"
 
 #include <assert.h>
@@ -439,56 +438,81 @@ void poulait(set_HashSet *firsts, fg_Token *token) {
     switch (token->type) {
         case FG_REF_TOKEN:
             return poulait(firsts, token->value.refToken.token);
-        case FG_RANGE_TOKEN:
-        case FG_STRING_TOKEN:
-            set_insertValue(firsts, token);
+        case FG_RANGE_TOKEN: {
+            prs_ParserItem *parserItem = malloc(sizeof(*parserItem));
+            parserItem->type = PRS_RANGE_ITEM;
+
+            prs_RangeArray *rangeArray = &token->value.rangeArray;
+            prs_RangeArray rangeArray1 = { .size = rangeArray->size };
+
+            rangeArray1.ranges = malloc(sizeof(*rangeArray1.ranges) * rangeArray->size);
+            memcpy(rangeArray1.ranges, rangeArray->ranges, sizeof(*rangeArray->ranges) * rangeArray->size);
+            parserItem->value.rangeArray = rangeArray1;
+
+            set_insertValue(firsts, parserItem);
             break;
+        }
+        case FG_STRING_TOKEN: {
+            prs_ParserItem *parserItem = malloc(sizeof(*parserItem));
+            parserItem->type = PRS_STRING_ITEM;
+
+            char *string = calloc(strlen(token->value.string) + 1, 1);
+            strcpy(string, token->value.string);
+            parserItem->value.string = string;
+
+            set_insertValue(firsts, parserItem);
+            break;
+        }
     }
 }
 
-set_HashSet *prs_ruleFirsts(ht_Table *table, fg_Rule *rule) {
-    assert(table);
-    assert(rule);
+static void parserItemDestructor(prs_ParserItem *parserItem) {
+    if (parserItem) {
+        prs_freeParserItem(parserItem);
+        free(parserItem);
+    }
+}
 
-    set_HashSet *set = ht_getValue(table, rule);
+set_HashSet *prs_first(ht_Table *table, fg_PRItem *prItem) {
+    assert(table);
+    assert(prItem);
+
+    set_HashSet *set = ht_getValue(table, prItem);
 
     if (set) {
         return set;
     }
 
     set = malloc(sizeof(*set));
-    set_createSet(set, 10, (ht_HashFunction*) prs_hashPRItem, NULL, NULL);
-    ht_insertElement(table, rule, set);
+    set_createSet(set, 10, (ht_HashFunction *) prs_hashParserItem, NULL, (set_ElementDestructor *) parserItemDestructor);
+    ht_insertElement(table, prItem, set);
 
-    ll_Iterator prIt = ll_createIterator(&rule->productionRuleList);
+    switch (prItem->type) {
+        case FG_RULE_ITEM: {
+            fg_Rule *rule = prItem->value.rule;
 
-    while (ll_iteratorHasNext(&prIt)) {
-        ll_LinkedList *pr = ll_iteratorNext(&prIt);
+            ll_Iterator it = ll_createIterator(&rule->productionRuleList);
 
-        fg_PRItem *prItem = pr->front->data;
-
-        switch (prItem->type) {
-            case FG_RULE_ITEM:
-                set_union(set, prs_ruleFirsts(table, prItem->value.rule));
-                break;
-            case FG_STRING_ITEM: {
-                fg_Token *token = malloc(sizeof(*token));
-                token->name = NULL;
-                token->type = FG_STRING_TOKEN;
-
-                char *string = calloc(strlen(prItem->value.string) + 1, 1);
-                strcpy(string, prItem->value.string);
-
-                token->value.string = string;
-                break;
+            while (ll_iteratorHasNext(&it)) {
+                set_union(set, prs_first(table, ll_iteratorNext(&it)));
             }
-            case FG_TOKEN_ITEM:
-                poulait(set, prItem->value.token);
-                if (prItem->value.token->quantifier == PRS_STAR_QUANTIFIER) {
-                    
-                }
-                break;
+            break;
         }
+        case FG_STRING_ITEM: {
+            prs_ParserItem *parserItem = malloc(sizeof(*parserItem));
+            parserItem->type = PRS_STRING_ITEM;
+
+            char *string = calloc(strlen(prItem->value.string) + 1, 1);
+            strcpy(string, prItem->value.string);
+
+            parserItem->value.string = string;
+
+            set_insertValue(set, parserItem);
+            break;
+        }
+        case FG_TOKEN_ITEM:
+            poulait(set, prItem->value.token);
+            break;
     }
 
     return set;
@@ -500,6 +524,35 @@ uint32_t prs_hashRule(fg_Rule *rule) {
     return ht_hashString(rule->name);
 }
 
+uint32_t prs_hashParserItem(prs_ParserItem *parserItem) {
+    assert(parserItem);
+
+    switch (parserItem->type) {
+        case PRS_RANGE_ITEM: {
+            prs_RangeArray *rangeArray = &parserItem->value.rangeArray;
+            char *buffer = calloc(rangeArray->size * 3, 1);
+            char *curr = buffer;
+
+            for (size_t i = 0;i < rangeArray->size;++i) {
+                prs_Range *range = rangeArray->ranges + i;
+
+                int c1 = (range->uppercaseLetter) ? toupper(range->start) : range->start;
+                int c2 = (range->uppercaseLetter) ? toupper(range->end) : range->end;
+
+                sprintf(curr, "%d-%d", c1, c2);
+                curr += 3;
+            }
+
+            uint32_t hash = ht_hashString(buffer);
+            free(buffer);
+
+            return hash;
+        }
+        case PRS_STRING_ITEM:
+            return ht_hashString(parserItem->value.string);
+    }
+}
+
 uint32_t prs_hashPRItem(struct fg_PRItem *prItem) {
     assert(prItem);
 
@@ -509,5 +562,14 @@ uint32_t prs_hashPRItem(struct fg_PRItem *prItem) {
         case FG_RULE_ITEM:
         case FG_TOKEN_ITEM:
             return ht_hashString(prItem->symbol);
+    }
+}
+
+void prs_freeParserItem(prs_ParserItem *parserItem) {
+    if (parserItem) {
+        if (parserItem->type == PRS_STRING_ITEM) {
+            free(parserItem->value.string);
+        }
+        memset(&parserItem->value, 0, sizeof(parserItem->value));
     }
 }
