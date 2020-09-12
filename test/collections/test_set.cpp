@@ -15,7 +15,7 @@ SCENARIO("A set is based on hash tables", "[set]") {
     set_HashSet set;
 
     GIVEN("An empty set") {
-        set_createSet(&set, 10, ht_hashString, (ht_KeyComparator*) strcmp, nullptr);
+        set_createSet(&set, 10, ht_hashString, (ht_KeyComparator *) strcmp, NULL, nullptr);
 
         WHEN("Adding a string element") {
             std::string e1 = "elem1";
@@ -48,10 +48,10 @@ SCENARIO("A set is based on hash tables", "[set]") {
 
 SCENARIO("Two sets can be merged with an union", "[set]") {
     set_HashSet s1;
-    set_createSet(&s1, 10, ht_hashString, (ht_KeyComparator*) intCmp, nullptr);
+    set_createSet(&s1, 10, ht_hashString, (ht_KeyComparator *) intCmp, nullptr, nullptr);
 
     set_HashSet s2;
-    set_createSet(&s2, 10, ht_hashString, (ht_KeyComparator*) intCmp, nullptr);
+    set_createSet(&s2, 10, ht_hashString, (ht_KeyComparator *) intCmp, nullptr, nullptr);
 
     GIVEN("Two empty sets") {
         WHEN("Doing union between s1 and s2") {

@@ -445,7 +445,7 @@ void poulait(set_HashSet *firsts, fg_Token *token) {
             prs_RangeArray *rangeArray = &token->value.rangeArray;
             prs_RangeArray rangeArray1 = { .size = rangeArray->size };
 
-            rangeArray1.ranges = malloc(sizeof(*rangeArray1.ranges) * rangeArray->size);
+            rangeArray1.ranges = malloc(sizeof(*rangeArray->ranges) * rangeArray->size);
             memcpy(rangeArray1.ranges, rangeArray->ranges, sizeof(*rangeArray->ranges) * rangeArray->size);
             parserItem->value.rangeArray = rangeArray1;
 
@@ -473,19 +473,50 @@ static void parserItemDestructor(prs_ParserItem *parserItem) {
     }
 }
 
-set_HashSet *prs_first(ht_Table *table, fg_PRItem *prItem) {
+static void parserItemCopyFactory(prs_ParserItem **pCopy, const prs_ParserItem *origin) {
+    prs_ParserItem *copy = malloc(sizeof(*copy));
+    copy->type = origin->type;
+
+    switch (copy->type) {
+        case PRS_RANGE_ITEM: {
+            const prs_RangeArray *target = &origin->value.rangeArray;
+            prs_RangeArray *rangeArray = &copy->value.rangeArray;
+
+            rangeArray->size = target->size;
+            rangeArray->ranges = malloc(sizeof(*rangeArray->ranges) * rangeArray->size);
+            memcpy(rangeArray->ranges, target->ranges, sizeof(*rangeArray->ranges) * rangeArray->size);
+            break;
+        }
+        case PRS_STRING_ITEM: {
+            char *string = calloc(strlen(origin->value.string) + 1, 1);
+            strcpy(string, origin->value.string);
+            copy->value.string = string;
+            break;
+        }
+    }
+
+    *pCopy = copy;
+}
+
+set_HashSet *prs_first(ht_Table *table, ll_LinkedList *pr, fg_PRItem *prItem, bool *pIsOptional) {
     assert(table);
+    assert(pr);
     assert(prItem);
 
-    set_HashSet *set = ht_getValue(table, prItem);
+    set_HashSet *set = ht_getValue(table, pr);
+
+    if (pIsOptional) {
+        *pIsOptional = (prItem->type == FG_TOKEN_ITEM && prItem->value.token->quantifier == PRS_STAR_QUANTIFIER) ? true : false;
+    }
 
     if (set) {
         return set;
     }
 
     set = malloc(sizeof(*set));
-    set_createSet(set, 10, (ht_HashFunction *) prs_hashParserItem, NULL, (set_ElementDestructor *) parserItemDestructor);
-    ht_insertElement(table, prItem, set);
+    set_createSet(set, 10, (ht_HashFunction *) prs_hashParserItem, NULL, (set_CopyFactory*) parserItemCopyFactory,
+                  (set_ElementDestructor *) parserItemDestructor);
+    ht_insertElement(table, pr, set);
 
     switch (prItem->type) {
         case FG_RULE_ITEM: {
@@ -494,7 +525,8 @@ set_HashSet *prs_first(ht_Table *table, fg_PRItem *prItem) {
             ll_Iterator it = ll_createIterator(&rule->productionRuleList);
 
             while (ll_iteratorHasNext(&it)) {
-                set_union(set, prs_first(table, ll_iteratorNext(&it)));
+                ll_LinkedList *prItemList = ll_iteratorNext(&it);
+                set_union(set, prs_prFirsts(table, prItemList));
             }
             break;
         }
@@ -518,6 +550,34 @@ set_HashSet *prs_first(ht_Table *table, fg_PRItem *prItem) {
     return set;
 }
 
+set_HashSet *prs_prFirsts(ht_Table *table, ll_LinkedList *pr) {
+    assert(table);
+    assert(pr);
+
+    ll_Iterator it = ll_createIterator(pr);
+    set_HashSet *set = NULL;
+
+    while (ll_iteratorHasNext(&it)) {
+        fg_PRItem *prItem = ll_iteratorNext(&it);
+
+        bool isOptional;
+        set_HashSet *set2 = prs_first(table, pr, prItem, &isOptional);
+
+        if (!set) {
+            set = set2;
+        }
+        else {
+            set_union(set, set2);
+        }
+
+        if (!isOptional) {
+            break;
+        }
+    }
+
+    return set;
+}
+
 uint32_t prs_hashRule(fg_Rule *rule) {
     assert(rule);
 
@@ -530,7 +590,7 @@ uint32_t prs_hashParserItem(prs_ParserItem *parserItem) {
     switch (parserItem->type) {
         case PRS_RANGE_ITEM: {
             prs_RangeArray *rangeArray = &parserItem->value.rangeArray;
-            char *buffer = calloc(rangeArray->size * 3, 1);
+            char *buffer = calloc(rangeArray->size * 3 + 1, 1);
             char *curr = buffer;
 
             for (size_t i = 0;i < rangeArray->size;++i) {
@@ -539,7 +599,7 @@ uint32_t prs_hashParserItem(prs_ParserItem *parserItem) {
                 int c1 = (range->uppercaseLetter) ? toupper(range->start) : range->start;
                 int c2 = (range->uppercaseLetter) ? toupper(range->end) : range->end;
 
-                sprintf(curr, "%d-%d", c1, c2);
+                sprintf(curr, "%c-%c", c1, c2);
                 curr += 3;
             }
 
@@ -551,6 +611,19 @@ uint32_t prs_hashParserItem(prs_ParserItem *parserItem) {
         case PRS_STRING_ITEM:
             return ht_hashString(parserItem->value.string);
     }
+}
+
+uint32_t prs_hashProductionRule(ll_LinkedList *pr) {
+    ll_Iterator it = ll_createIterator(pr);
+    uint32_t hash = 0;
+
+    while (ll_iteratorHasNext(&it)) {
+        fg_PRItem *prItem = ll_iteratorNext(&it);
+
+        hash += prs_hashPRItem(prItem);
+    }
+
+    return hash;
 }
 
 uint32_t prs_hashPRItem(struct fg_PRItem *prItem) {
@@ -567,8 +640,13 @@ uint32_t prs_hashPRItem(struct fg_PRItem *prItem) {
 
 void prs_freeParserItem(prs_ParserItem *parserItem) {
     if (parserItem) {
-        if (parserItem->type == PRS_STRING_ITEM) {
-            free(parserItem->value.string);
+        switch (parserItem->type) {
+            case PRS_RANGE_ITEM:
+                free(parserItem->value.rangeArray.ranges);
+                break;
+            case PRS_STRING_ITEM:
+                free(parserItem->value.string);
+                break;
         }
         memset(&parserItem->value, 0, sizeof(parserItem->value));
     }

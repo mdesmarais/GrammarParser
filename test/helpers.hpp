@@ -1,6 +1,10 @@
 #ifndef HELPERS_HPP
 #define HELPERS_HPP
 
+extern "C" {
+#include <collections/set.h>
+}
+
 #include <string>
 #include <vector>
 
@@ -18,5 +22,13 @@ struct ll_LinkedList;
  * @param items list of strings
  */
 void fillItemList(ll_LinkedList *itemList, const std::vector<std::string> &items);
+
+template <class T>
+T *firstSetItem(set_HashSet *set) {
+    set_Iterator it;
+    set_createIterator(&it, set);
+
+    return (T*) set_iteratorNext(&it);
+}
 
 #endif // HELPERS_HPP

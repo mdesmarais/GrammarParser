@@ -103,10 +103,12 @@ ssize_t prs_readGrammar(FILE *stream, char **pBuffer);
  */
 int prs_splitDelimiters(struct ll_Iterator *it, const char *delimiters);
 
-set_HashSet *prs_first(struct ht_Table *table, struct fg_PRItem *prItem);
+set_HashSet *prs_first(ht_Table *table, struct ll_LinkedList *pr, struct fg_PRItem *prItem, bool *pIsOptional);
+set_HashSet *prs_prFirsts(ht_Table *table, struct ll_LinkedList *pr);
 
 uint32_t prs_hashRule(struct fg_Rule *rule);
 uint32_t prs_hashParserItem(prs_ParserItem *parserItem);
+uint32_t prs_hashProductionRule(ll_LinkedList *pr);
 uint32_t prs_hashPRItem(struct fg_PRItem *prItem);
 
 void prs_createStringParserItem(prs_ParserItem *parserItem, char *string);

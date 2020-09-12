@@ -319,27 +319,182 @@ SCENARIO("string items have a position (line, column) in a source string", "[par
 }
 
 SCENARIO("Computes a set of probable first terminals", "[parser]") {
-    fg_Grammar g;
-    fg_createGrammar(&g);
+    ht_Table table;
+    ht_createTable(&table, 10, (ht_HashFunction*) prs_hashProductionRule, nullptr, [](void *key, void *value) {
+        auto set = (set_HashSet*) value;
+        set_freeSet(set);
+        free(set);
+    });
 
-    ll_LinkedList itemList;
-    ll_createLinkedList(&itemList, (ll_DataDestructor*) prs_freeStringItem);
-
-    fillItemList(&itemList, { "%s", "=", "f", "|", "`(`", "s", "`+`", "f", "`)`", ";", "%f", "=", "`1`", ";" });
-    REQUIRE(PRS_OK == prs_parseGrammarItems(&g, &itemList));
-    REQUIRE(PRS_OK == prs_resolveSymbols(&g));
+    ll_LinkedList pr;
+    ll_createLinkedList(&pr, nullptr);
 
     GIVEN("An empty hash table") {
-        ht_Table table;
+        GIVEN("A string pr item") {
+            fg_PRItem prItem = { .type = FG_STRING_ITEM };
+            prItem.value.string = (char*) "+";
+            ll_pushBack(&pr, &prItem);
 
-        WHEN("Computing first terminals for production rule s->f") {
-            fg_Rule *sRule = (fg_Rule *) ht_getValue(&g.rules, "s");
+            set_HashSet *set = prs_first(&table, &pr, &prItem, nullptr);
 
-            fg_PRItem *prItem = (fg_PRItem *) sRule->productionRuleList.front->data;
-            // @TODO to finish
+            THEN("The output set should have a size of one") {
+                REQUIRE(1 == set->size);
+            }
+
+            AND_THEN("The element should be a string") {
+                auto parserItem = firstSetItem<prs_ParserItem>(set);
+                REQUIRE(PRS_STRING_ITEM == parserItem->type);
+                REQUIRE_THAT("+", Equals(parserItem->value.string));
+            }
+        }
+
+        GIVEN("A token pr item with a string token") {
+            fg_Token token = { .type = FG_STRING_TOKEN, .name = (char*) "TOKEN"};
+            token.value.string = (char*) "+";
+
+            prs_StringItem stringItem = { .item = (char*) "TOKEN" };
+
+            fg_PRItem prItem = { .type = FG_TOKEN_ITEM, .symbol = &stringItem };
+            prItem.value.token = &token;
+            ll_pushBack(&pr, &prItem);
+
+            bool isOptional;
+            set_HashSet *set = prs_first(&table, &pr, &prItem, &isOptional);
+
+            THEN("The output set should have a size of one") {
+                REQUIRE(1 == set->size);
+            }
+
+            AND_THEN("The element should be a string") {
+                auto parserItem = firstSetItem<prs_ParserItem>(set);
+                REQUIRE(PRS_STRING_ITEM == parserItem->type);
+                REQUIRE_THAT("+", Equals(parserItem->value.string));
+            }
+
+            AND_THEN("The given pr item should not be optional") {
+                REQUIRE_FALSE(isOptional);
+            }
+
+            AND_WHEN("Token is optional") {
+                token.quantifier = PRS_STAR_QUANTIFIER;
+
+                set = prs_first(&table, &pr, &prItem, &isOptional);
+
+                THEN("Given boolean should be true") {
+                    REQUIRE(isOptional);
+                }
+            }
+        }
+
+        GIVEN("A rule pr item with a string token and a range token") {
+            ll_LinkedList itemList;
+            ll_createLinkedList(&itemList, (ll_DataDestructor*) prs_freeStringItem);
+            fillItemList(&itemList, {
+                "%TOKEN1", "=", "`+`", ";",
+                "%TOKEN2", "=", "[a-t]", ";",
+                "%rule1", "=", "TOKEN1", "|", "TOKEN2", ";",
+                "%rule2", "=", "rule1", ";"
+            });
+
+            fg_Grammar g;
+            fg_createGrammar(&g);
+
+            REQUIRE(PRS_OK == prs_parseGrammarItems(&g, &itemList));
+            REQUIRE(PRS_OK == prs_resolveSymbols(&g));
+
+            //auto rule1 = (fg_Rule*) ht_getValue(&g.rules, "rule1");
+            auto rule2 = (fg_Rule*) ht_getValue(&g.rules, "rule2");
+
+            auto pouet = (ll_LinkedList*) rule2->productionRuleList.front->data;
+            auto prItem = (fg_PRItem*) pouet->front->data;
+
+            set_HashSet *set = prs_first(&table, pouet, prItem, nullptr);
+            REQUIRE(2 == set->size);
+
+            fg_freeGrammar(&g);
+            ll_freeLinkedList(&itemList, nullptr);
+        }
+
+        GIVEN("A ref token") {
+            fg_Token t1 = { .type = FG_STRING_TOKEN, .name = (char*) "TOKEN1"};
+            t1.value.string = (char*) "+";
+
+            fg_Token t2 = { .type = FG_REF_TOKEN, .name = (char*) "TOKEN2"};
+            t2.value.refToken.token = &t1;
+
+            prs_StringItem stringItem = { .item = (char*) "TOKEN2" };
+
+            fg_PRItem prItem = { .type = FG_TOKEN_ITEM, .symbol = &stringItem };
+            prItem.value.token = &t2;
+            ll_pushBack(&pr, &prItem);
+
+            set_HashSet *set = prs_first(&table, &pr, &prItem, nullptr);
+
+            THEN("The result set should contain only one element") {
+                REQUIRE(1 == set->size);
+            }
+
+            AND_THEN("The element should be a parser item +") {
+                auto parserItem = firstSetItem<prs_ParserItem>(set);
+                REQUIRE(PRS_STRING_ITEM == parserItem->type);
+                REQUIRE_THAT("+", Equals(parserItem->value.string));
+            }
+        }
+
+        ll_freeLinkedList(&pr, NULL);
+        ht_freeTable(&table);
+    }
+
+}
+
+SCENARIO("pouet", "[parser]") {
+    ht_Table table;
+    ht_createTable(&table, 10, (ht_HashFunction*) prs_hashProductionRule, nullptr, [](void *key, void *value) {
+        auto set = (set_HashSet*) value;
+        set_freeSet(set);
+        free(set);
+    });
+
+    ll_LinkedList pr;
+    ll_createLinkedList(&pr, nullptr);
+
+    GIVEN("A pr with two required item") {
+        fg_PRItem prItem1 = { .type = FG_STRING_ITEM };
+        prItem1.value.string = (char*) "hello";
+
+        fg_PRItem prItem2 = { .type = FG_STRING_ITEM };
+        prItem2.value.string = (char*) "world";
+
+        ll_pushBackBatch(&pr, 2, &prItem1, &prItem2);
+
+        set_HashSet *set = prs_prFirsts(&table, &pr);
+
+        THEN("The result set should contain only one element") {
+            REQUIRE(1 == set->size);
         }
     }
 
-    ll_freeLinkedList(&itemList, NULL);
-    fg_freeGrammar(&g);
+    GIVEN("A pr with one optional item and one required") {
+        fg_Token token = { .type = FG_STRING_TOKEN, .name = (char*) "TOKEN" };
+        token.value.string = (char*) "foo";
+        token.quantifier = PRS_STAR_QUANTIFIER;
+
+        prs_StringItem stringItem = { .item = (char*) "TOKEN" };
+        fg_PRItem prItem1 = { .type = FG_TOKEN_ITEM, .symbol = &stringItem };
+        prItem1.value.token = &token;
+
+        fg_PRItem prItem2 = { .type = FG_STRING_ITEM };
+        prItem2.value.string = (char*) "hello";
+
+        ll_pushBackBatch(&pr, 2, &prItem1, &prItem2);
+
+        set_HashSet *set = prs_prFirsts(&table, &pr);
+
+        THEN("The result set should contain two elements") {
+            REQUIRE(2 == set->size);
+        }
+    }
+
+    ll_freeLinkedList(&pr, NULL);
+    ht_freeTable(&table);
 }
