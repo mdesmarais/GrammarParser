@@ -3,6 +3,7 @@
 #include "helpers.hpp"
 
 extern "C" {
+#include <parser.h>
 #include <parser_errors.h>
 #include <formal_grammar.h>
 #include <collections/linked_list.h>

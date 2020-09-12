@@ -526,7 +526,7 @@ set_HashSet *prs_first(ht_Table *table, ll_LinkedList *pr, fg_PRItem *prItem, bo
 
             while (ll_iteratorHasNext(&it)) {
                 ll_LinkedList *prItemList = ll_iteratorNext(&it);
-                set_union(set, prs_prFirsts(table, prItemList));
+                set_union(set, prs_prFirst(table, prItemList));
             }
             break;
         }
@@ -550,7 +550,7 @@ set_HashSet *prs_first(ht_Table *table, ll_LinkedList *pr, fg_PRItem *prItem, bo
     return set;
 }
 
-set_HashSet *prs_prFirsts(ht_Table *table, ll_LinkedList *pr) {
+set_HashSet *prs_prFirst(ht_Table *table, ll_LinkedList *pr) {
     assert(table);
     assert(pr);
 
@@ -576,12 +576,6 @@ set_HashSet *prs_prFirsts(ht_Table *table, ll_LinkedList *pr) {
     }
 
     return set;
-}
-
-uint32_t prs_hashRule(fg_Rule *rule) {
-    assert(rule);
-
-    return ht_hashString(rule->name);
 }
 
 uint32_t prs_hashParserItem(prs_ParserItem *parserItem) {
@@ -610,31 +604,6 @@ uint32_t prs_hashParserItem(prs_ParserItem *parserItem) {
         }
         case PRS_STRING_ITEM:
             return ht_hashString(parserItem->value.string);
-    }
-}
-
-uint32_t prs_hashProductionRule(ll_LinkedList *pr) {
-    ll_Iterator it = ll_createIterator(pr);
-    uint32_t hash = 0;
-
-    while (ll_iteratorHasNext(&it)) {
-        fg_PRItem *prItem = ll_iteratorNext(&it);
-
-        hash += prs_hashPRItem(prItem);
-    }
-
-    return hash;
-}
-
-uint32_t prs_hashPRItem(struct fg_PRItem *prItem) {
-    assert(prItem);
-
-    switch (prItem->type) {
-        case FG_STRING_ITEM:
-            return ht_hashString(prItem->value.string);
-        case FG_RULE_ITEM:
-        case FG_TOKEN_ITEM:
-            return ht_hashString(prItem->symbol);
     }
 }
 

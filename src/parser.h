@@ -64,10 +64,49 @@ int prs_extractGrammarItems(const char *source, size_t length, struct ll_LinkedL
  */
 bool prs_computeItemsPosition(const char *source, struct ll_Iterator *it);
 
+/**
+ * Frees allocated memory for the given string item.
+ *
+ * The given pointer will not be freed.
+ *
+ * @param stringItem a pointer to a string item
+ */
 void prs_freeStringItem(prs_StringItem *stringItem);
 
+/**
+ * Transforms a list of items into a grammar structure.
+ *
+ * A grammar is made by one or more rule and token definitions.
+ *
+ * If a prs_StringItem does not correspond to a rule or a token, PrS_UNKNOWN_ITEM will
+ * be returned.
+ *
+ * A rule definition starts with "%" followed by a lowercase letter. If the rule
+ * already exists then FG_RULE_EXISTS will be returned.
+ * Other error codes can be returned by {@link fg_extractRule}.
+ *
+ * A token definition starts with "%" followed by an uppercase letter. If the token
+ * already exists then FG_TOKEN_EXISTS will be returned.
+ * Other error codes can be returned by {@link fg_extractToken}.
+ *
+ * @param g a pointer to the grammar structure
+ * @param itemList a pointer to a list of prs_StringItem
+ * @return PRS_OK if not error occurs, otherwise a different error code
+ */
 prs_ErrCode prs_parseGrammarItems(struct fg_Grammar *g, struct ll_LinkedList *itemList);
 
+/**
+ * Resolves symbol references.
+ *
+ * Symbol references occur in token and rule declarations : a rule can references a token or another rule,
+ * and a token can references another token.
+ *
+ * If a token or a rule references an unknown token then FG_UNKNOWN_TOKEN will be returned.
+ * If a rule references an unknown rule then FG_UNKNOWN_RULE will be returned.
+ *
+ * @param g a pointer to a grammar structure
+ * @return PRS_OK if no error occurs, otherwise a different error code
+ */
 prs_ErrCode prs_resolveSymbols(struct fg_Grammar *g);
 
 /**
@@ -103,15 +142,53 @@ ssize_t prs_readGrammar(FILE *stream, char **pBuffer);
  */
 int prs_splitDelimiters(struct ll_Iterator *it, const char *delimiters);
 
+/**
+ * Computes a set of potential first terminals for the given production rule item.
+ *
+ * We use dynamic programming to improve computation speed : it is usefull when there are
+ * many references to other rules / tokens. The table parameter will be used to store intermediate
+ * computations.
+ * An entry in the table is represented by a pair (production rule / set of prs_ParserItem elements).
+ *
+ * A production rule can be optional if it is quantified by a star (ex: rule1 -> rule2*). In this case,
+ * we should call this function with the following production rule item. This is the role of {@link prs_prFirst}.
+ * An optional bool pointer can be passed to get this information.
+ *
+ * @param table a pointer to a hash table
+ * @param pr a pointer to a production rule (list of fg_PrItem)
+ * @param prItem a pointer to the first prItem of the production rule
+ * @param pIsOptional pointer to a boolean that will be set to true if the prItem is optional
+ * @return a pointer to a set of prs_ParserItem elements
+ */
 set_HashSet *prs_first(ht_Table *table, struct ll_LinkedList *pr, struct fg_PRItem *prItem, bool *pIsOptional);
-set_HashSet *prs_prFirsts(ht_Table *table, struct ll_LinkedList *pr);
 
-uint32_t prs_hashRule(struct fg_Rule *rule);
+/**
+ * Computes a set of potential firsts terminals for the given production rule.
+ *
+ * This function handles the case of optional production rule items.
+ *
+ * @see prs_first for more explaination
+ * @param table a pointer to a hash table of (ll_LinkedList / set of prs_ParserItem elements)
+ * @param pr a pointer to a production rule
+ * @return a pointer to a set of prs_ParserItem elements
+ */
+set_HashSet *prs_prFirst(ht_Table *table, struct ll_LinkedList *pr);
+
+/**
+ * Computes a hash value for the given parser item.
+ *
+ * @param parserItem a pointer to a parser item
+ * @return a hash value
+ */
 uint32_t prs_hashParserItem(prs_ParserItem *parserItem);
-uint32_t prs_hashProductionRule(ll_LinkedList *pr);
-uint32_t prs_hashPRItem(struct fg_PRItem *prItem);
 
-void prs_createStringParserItem(prs_ParserItem *parserItem, char *string);
+/**
+ * Frees allocated memory for the given parser item.
+ *
+ * The given pointer will not be freed.
+ *
+ * @param parserItem a pointer to a parser item
+ */
 void prs_freeParserItem(prs_ParserItem *parserItem);
 
 #endif // PARSER_H

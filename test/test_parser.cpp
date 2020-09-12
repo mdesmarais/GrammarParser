@@ -320,8 +320,8 @@ SCENARIO("string items have a position (line, column) in a source string", "[par
 
 SCENARIO("Computes a set of probable first terminals", "[parser]") {
     ht_Table table;
-    ht_createTable(&table, 10, (ht_HashFunction*) prs_hashProductionRule, nullptr, [](void *key, void *value) {
-        auto set = (set_HashSet*) value;
+    ht_createTable(&table, 10, (ht_HashFunction *) fg_hashProductionRule, nullptr, [](void *key, void *value) {
+        auto set = (set_HashSet *) value;
         set_freeSet(set);
         free(set);
     });
@@ -449,8 +449,8 @@ SCENARIO("Computes a set of probable first terminals", "[parser]") {
 
 SCENARIO("pouet", "[parser]") {
     ht_Table table;
-    ht_createTable(&table, 10, (ht_HashFunction*) prs_hashProductionRule, nullptr, [](void *key, void *value) {
-        auto set = (set_HashSet*) value;
+    ht_createTable(&table, 10, (ht_HashFunction *) fg_hashProductionRule, nullptr, [](void *key, void *value) {
+        auto set = (set_HashSet *) value;
         set_freeSet(set);
         free(set);
     });
@@ -467,7 +467,7 @@ SCENARIO("pouet", "[parser]") {
 
         ll_pushBackBatch(&pr, 2, &prItem1, &prItem2);
 
-        set_HashSet *set = prs_prFirsts(&table, &pr);
+        set_HashSet *set = prs_prFirst(&table, &pr);
 
         THEN("The result set should contain only one element") {
             REQUIRE(1 == set->size);
@@ -488,7 +488,7 @@ SCENARIO("pouet", "[parser]") {
 
         ll_pushBackBatch(&pr, 2, &prItem1, &prItem2);
 
-        set_HashSet *set = prs_prFirsts(&table, &pr);
+        set_HashSet *set = prs_prFirst(&table, &pr);
 
         THEN("The result set should contain two elements") {
             REQUIRE(2 == set->size);
