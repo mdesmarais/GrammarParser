@@ -171,14 +171,6 @@ void fg_freeRule(fg_Rule *rule);
 prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, struct prs_StringItem *currentStringItem, struct prs_StringItem **pLastStringItem);
 
 /**
- * Computes a hash value for the given production rule.
- *
- * @param pr pointer to a production rule
- * @return a hash value
- */
-uint32_t fg_hashProductionRule(ll_LinkedList *pr);
-
-/**
  * Extracts a production rule item from a prs_StringItem.
  *
  * The production rule item can be either a string block : `...`
@@ -197,14 +189,6 @@ uint32_t fg_hashProductionRule(ll_LinkedList *pr);
  * @return PRS_OK if no error occurs, otherwise a different error code
  */
 prs_ErrCode fg_extractPRItem(fg_PRItem *prItem, struct prs_StringItem *stringItem);
-
-/**
- * Computes a hash value for the given production rule item.
- *
- * @param prItem a pointer to a production rule item
- * @return a hash value
- */
-uint32_t fg_hashPRItem(fg_PRItem *prItem);
 
 /**
  * Frees allocated memory for the given production rule item.

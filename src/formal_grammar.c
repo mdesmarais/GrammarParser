@@ -1,6 +1,7 @@
 #include "formal_grammar.h"
 
 #include "parser.h"
+#include "hash.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -28,8 +29,8 @@ static void ruleDestructor(void *key, void *value) {
 
 void fg_createGrammar(fg_Grammar *g) {
     g->entry = NULL;
-    ht_createTable(&g->tokens, 10, ht_hashString, (ht_KeyComparator*) strcmp, tokenDestructor);
-    ht_createTable(&g->rules, 10, ht_hashString, (ht_KeyComparator*) strcmp, ruleDestructor);
+    ht_createTable(&g->tokens, 10, (ht_HashFunction*) hashString, (ht_KeyComparator*) strcmp, tokenDestructor);
+    ht_createTable(&g->rules, 10, (ht_HashFunction*) hashString, (ht_KeyComparator*) strcmp, ruleDestructor);
 }
 
 void fg_freeGrammar(fg_Grammar *g) {
@@ -285,19 +286,6 @@ prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it,
     return PRS_OK;
 }
 
-uint32_t fg_hashProductionRule(ll_LinkedList *pr) {
-    ll_Iterator it = ll_createIterator(pr);
-    uint32_t hash = 0;
-
-    while (ll_iteratorHasNext(&it)) {
-        fg_PRItem *prItem = ll_iteratorNext(&it);
-
-        hash += fg_hashPRItem(prItem);
-    }
-
-    return hash;
-}
-
 prs_ErrCode fg_extractPRItem(fg_PRItem *prItem, prs_StringItem *stringItem) {
     assert(prItem);
     assert(stringItem);
@@ -328,18 +316,6 @@ prs_ErrCode fg_extractPRItem(fg_PRItem *prItem, prs_StringItem *stringItem) {
     }
 
     return PRS_OK;
-}
-
-uint32_t fg_hashPRItem(fg_PRItem *prItem) {
-    assert(prItem);
-
-    switch (prItem->type) {
-        case FG_STRING_ITEM:
-            return ht_hashString(prItem->value.string);
-        case FG_RULE_ITEM:
-        case FG_TOKEN_ITEM:
-            return ht_hashString(prItem->symbol);
-    }
 }
 
 void fg_freePRItem(fg_PRItem *prItem) {

@@ -124,23 +124,6 @@ void ht_removeElement(ht_Table *table, const void *key) {
     }
 }
 
-uint32_t ht_hashString(const void *data) {
-    uint32_t value = 0;
-
-    while (*((char*) data) != '\0') {
-        value += *((char*) data);
-        value += value << 10;
-        value ^= value >> 6;
-        ++data;
-    }
-
-    value += value << 3;
-    value ^= value >> 11;
-    value += value << 15;
-
-    return value;
-}
-
 void *ht_getValue(ht_Table *table, const void *key) {
     assert(table);
     assert(key);

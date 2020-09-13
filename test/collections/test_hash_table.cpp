@@ -3,13 +3,14 @@
 extern "C" {
 #include <collections/hash_table.h>
 #include <collections/linked_list.h>
+#include <hash.h>
 }
 
 SCENARIO("A hash table is created with an initial capacity", "[hash_table]") {
     ht_Table table = {};
 
     GIVEN("A capacity of 5") {
-        bool res = ht_createTable(&table, 5, ht_hashString, nullptr, nullptr);
+        bool res = ht_createTable(&table, 5, (ht_HashFunction*) hashString, nullptr, nullptr);
 
         THEN("It should return true") {
             REQUIRE(res);

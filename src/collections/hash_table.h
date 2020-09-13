@@ -92,18 +92,6 @@ void ht_insertElement(ht_Table *table, void *key, void *value);
 void ht_removeElement(ht_Table *table, const void *key);
 
 /**
- * Computes a 256 bits hash value of the given string.
- *
- * Its based on the Jenkins hash function.
- *
- * The given string must be null terminated.
- *
- * @param data string to hash
- * @return computed hash value
- */
-uint32_t ht_hashString(const void *data);
-
-/**
  * Retrieves a value by using its key.
  *
  * It the given key does not exist, then a null

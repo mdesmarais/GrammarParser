@@ -3,6 +3,7 @@
 #include "collections/hash_table.h"
 #include "collections/linked_list.h"
 #include "formal_grammar.h"
+#include "hash.h"
 #include "log.h"
 #include "string_utils.h"
 
@@ -526,7 +527,8 @@ set_HashSet *prs_first(ht_Table *table, ll_LinkedList *pr, fg_PRItem *prItem, bo
 
             while (ll_iteratorHasNext(&it)) {
                 ll_LinkedList *prItemList = ll_iteratorNext(&it);
-                set_union(set, prs_prFirst(table, prItemList));
+                set_HashSet *pwet = prs_prFirst(table, prItemList);
+                set_union(set, pwet);
             }
             break;
         }
@@ -576,35 +578,6 @@ set_HashSet *prs_prFirst(ht_Table *table, ll_LinkedList *pr) {
     }
 
     return set;
-}
-
-uint32_t prs_hashParserItem(prs_ParserItem *parserItem) {
-    assert(parserItem);
-
-    switch (parserItem->type) {
-        case PRS_RANGE_ITEM: {
-            prs_RangeArray *rangeArray = &parserItem->value.rangeArray;
-            char *buffer = calloc(rangeArray->size * 3 + 1, 1);
-            char *curr = buffer;
-
-            for (size_t i = 0;i < rangeArray->size;++i) {
-                prs_Range *range = rangeArray->ranges + i;
-
-                int c1 = (range->uppercaseLetter) ? toupper(range->start) : range->start;
-                int c2 = (range->uppercaseLetter) ? toupper(range->end) : range->end;
-
-                sprintf(curr, "%c-%c", c1, c2);
-                curr += 3;
-            }
-
-            uint32_t hash = ht_hashString(buffer);
-            free(buffer);
-
-            return hash;
-        }
-        case PRS_STRING_ITEM:
-            return ht_hashString(parserItem->value.string);
-    }
 }
 
 void prs_freeParserItem(prs_ParserItem *parserItem) {

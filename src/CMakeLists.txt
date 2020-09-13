@@ -12,7 +12,18 @@ else()
     message(FATAL_ERROR "Doxygen is needed to generate the documentation")
 endif()
 
-list(APPEND source_files parser_errors.c formal_grammar.c collections/hash_table.c collections/linked_list.c log.c parser.c range.c collections/set.c string_utils.c)
+list(APPEND source_files
+        collections/hash_table.c
+        collections/linked_list.c
+        collections/set.c
+        formal_grammar.c
+        hash.c
+        log.c
+        parser.c
+        parser_errors.c
+        range.c
+        string_utils.c
+)
 
 add_library(parser_lib ${source_files})
 

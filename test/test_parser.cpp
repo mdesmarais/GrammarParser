@@ -8,8 +8,9 @@
 #include <sstream>
 
 extern "C" {
-#include <formal_grammar.h>
 #include <collections/linked_list.h>
+#include <formal_grammar.h>
+#include <hash.h>
 #include <parser.h>
 }
 
@@ -320,7 +321,7 @@ SCENARIO("string items have a position (line, column) in a source string", "[par
 
 SCENARIO("Computes a set of probable first terminals", "[parser]") {
     ht_Table table;
-    ht_createTable(&table, 10, (ht_HashFunction *) fg_hashProductionRule, nullptr, [](void *key, void *value) {
+    ht_createTable(&table, 10, (ht_HashFunction*) hashProductionRule, nullptr, [](void *key, void *value) {
         auto set = (set_HashSet *) value;
         set_freeSet(set);
         free(set);
@@ -402,13 +403,20 @@ SCENARIO("Computes a set of probable first terminals", "[parser]") {
             REQUIRE(PRS_OK == prs_parseGrammarItems(&g, &itemList));
             REQUIRE(PRS_OK == prs_resolveSymbols(&g));
 
-            //auto rule1 = (fg_Rule*) ht_getValue(&g.rules, "rule1");
+            auto rule1 = (fg_Rule*) ht_getValue(&g.rules, "rule1");
+
             auto rule2 = (fg_Rule*) ht_getValue(&g.rules, "rule2");
 
-            auto pouet = (ll_LinkedList*) rule2->productionRuleList.front->data;
+            auto pouet = (ll_LinkedList*) rule1->productionRuleList.front->data;
             auto prItem = (fg_PRItem*) pouet->front->data;
-
             set_HashSet *set = prs_first(&table, pouet, prItem, nullptr);
+
+
+            auto pouet2 = (ll_LinkedList*) rule1->productionRuleList.front->data;
+            auto prItem2 = (fg_PRItem*) pouet->front->data;
+            set_HashSet *set2 = prs_first(&table, pouet2, prItem2, nullptr);
+
+            set_union(set, set2); // @FIXME the problem is here
             REQUIRE(2 == set->size);
 
             fg_freeGrammar(&g);
@@ -449,7 +457,7 @@ SCENARIO("Computes a set of probable first terminals", "[parser]") {
 
 SCENARIO("pouet", "[parser]") {
     ht_Table table;
-    ht_createTable(&table, 10, (ht_HashFunction *) fg_hashProductionRule, nullptr, [](void *key, void *value) {
+    ht_createTable(&table, 10, (ht_HashFunction *) hashProductionRule, nullptr, [](void *key, void *value) {
         auto set = (set_HashSet *) value;
         set_freeSet(set);
         free(set);

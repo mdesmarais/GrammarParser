@@ -175,14 +175,6 @@ set_HashSet *prs_first(ht_Table *table, struct ll_LinkedList *pr, struct fg_PRIt
 set_HashSet *prs_prFirst(ht_Table *table, struct ll_LinkedList *pr);
 
 /**
- * Computes a hash value for the given parser item.
- *
- * @param parserItem a pointer to a parser item
- * @return a hash value
- */
-uint32_t prs_hashParserItem(prs_ParserItem *parserItem);
-
-/**
  * Frees allocated memory for the given parser item.
  *
  * The given pointer will not be freed.
