@@ -1,6 +1,11 @@
 #ifndef PARSER_ERRORS_H
 #define PARSER_ERRORS_H
 
+/**
+ * @file
+ * Defines errors code.
+ */
+
 #include <stdbool.h>
 #include <stdio.h>
 

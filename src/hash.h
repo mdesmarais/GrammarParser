@@ -1,6 +1,12 @@
 #ifndef HASH_H
 #define HASH_H
 
+/**
+ * @file
+ * Defines functions to hash objects.
+ * It also defines MurmurHash3 functions.
+ */
+
 #include <stdint.h>
 #include <string.h>
 

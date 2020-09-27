@@ -1,6 +1,11 @@
 #ifndef STRING_UTILS_H
 #define STRING_UTILS_H
 
+/**
+ * @file
+ * Defines utility functions to manipulate strings.
+ */
+
 #include <stdio.h>
 #include <string.h>
 

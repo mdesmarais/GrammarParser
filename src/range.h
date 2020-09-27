@@ -1,6 +1,11 @@
 #ifndef RANGE_H
 #define RANGE_H
 
+/**
+ * @file
+ * Defines structures and functions to use ranges in a grammar.
+ */
+
 #include "parser_errors.h"
 
 #include <stdbool.h>

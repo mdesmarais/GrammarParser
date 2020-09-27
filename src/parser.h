@@ -1,6 +1,11 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+/**
+ * @file
+ * Defines structures and functions to parse a grammar.
+ */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

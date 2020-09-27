@@ -1,6 +1,11 @@
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
 
+/**
+ * @file
+ * Linked list definition.
+ */
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>

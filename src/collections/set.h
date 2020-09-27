@@ -1,6 +1,12 @@
 #ifndef SET_H
 #define SET_H
 
+/**
+ * @file
+ * Set definition.
+ * It uses hash table implementation with a pair of (key / sentinel value = 1).
+ */
+
 #include "hash_table.h"
 
 #include <stdbool.h>

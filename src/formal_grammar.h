@@ -1,6 +1,11 @@
 #ifndef FORMAL_GRAMMAR_H
 #define FORMAL_GRAMMAR_H
 
+/**
+ * @file
+ * Defines structures and functions for storing a formal grammar in memory.
+ */
+
 #include "collections/hash_table.h"
 #include "collections/linked_list.h"
 #include "parser_errors.h"

@@ -1,6 +1,11 @@
 #ifndef HASH_TABLE_H
 #define HASH_TABLE_H
 
+/**
+ * @file
+ * Hash table definition.
+ */
+
 #include "linked_list.h"
 
 #include <stdbool.h>
