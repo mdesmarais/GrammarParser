@@ -1,11 +1,56 @@
 # Grammar Parser
 
-Naviguation
+Navigation
 
+* [Introduction](#introduction)
+* [Build from source](#build)
 * [In-depth developpment documentation](#indepth)
     * [Grammar format](#gformat)
     * [Grammar parsing](#gparsing)
     * [Error handling](#errorhandling)
+
+Included dependencies
+
+* [Catch2](https://github.com/catchorg/Catch2) (C++ unit test library)
+* [MurmurHash3](https://github.com/PeterScott/murmur3) (hash library, original implementation has been slightly changed)
+* [Rxi Log](https://github.com/rxi/log.c) (simple logging library)
+
+## Introduction
+
+The aim of this project is to practice programming in C and use knowledges I learned at the university. I decided to write
+a grammar parser similar to [ANTLR](https://www.antlr.org). ANTLR has a functionality of writing a grammar and
+test an input to see if it recognized by the grammar or not.
+
+I'm using the [LL(1)](https://en.wikipedia.org/wiki/LL_parser) algorithm to analyze the input on the given grammar.
+One of the main drawback of this parser is that he can't recognize every type of grammar, espacially those who have
+many derivations for the same character input.
+
+Doxygen is used to build a documentation.  
+I use my owns implementations of basic data structures (hash table, linked list, set). They are usable 
+for all data types as long as they are comparable and/or hashable.  
+I wrote some unit tests with Catch2 using the BDD style (Given / WHEN / THEN).
+
+Currently, this project is not finished yet. I need to fix a bug in a data structure that leads to
+some problems when implementing the LL(1) algorithm.
+
+## <a name="build"></a> Build from source
+
+We use CMake to manage dependencies and build the project from sources.  
+The use of a dedicated folder for the output build is preferred.
+
+```bash
+git clone git@github.com:mdesmarais/GrammarParser.git
+cd GrammarParser
+mkdir build && cd build
+cmake ..
+make
+```
+
+By default, doxygen documentation won't be built. You can change this option in the CMakeCache file, variable *BUILD_DOC*.
+
+You can also change variable's value *BUILD_TESTING* if you don't want to build tests.
+
+Unit tests can be executed with cmake in the build directory with the command `ctest`.
 
 ## <a name="indepth"></a>In-depth developpment documentation
 
@@ -78,7 +123,7 @@ Here is the contant of the list after the split. A linked list is used to store 
 
 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 |---|---|---|---|---|---|---|
-| `$s` | `=` | `f` | `|` | `` `(` `` | `s` | `` `+` `` |
+| `$s` | `=` | `f` | <code>&#124;</code> | `` `(` `` | `s` | `` `+` `` |
 
 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
 |---|---|---|---|---|---|---|
@@ -109,8 +154,8 @@ After step 2, we can retreive position (column and line) of each item in the giv
 | `$s` | 0 : 0 |
 | `=` | 0 : 3 |
 | `f` | 0 : 4 |
-| `|` | 1 : 4 |
+| <code>&#124;</code> | 1 : 4 |
 | `` `(` `` | 1 : 6 |
 | ... | ... |
 
-If the rule *f* didn't exist, then the parser will return an error like this one : "Unknown rule 'f' (0:4)".
+If the rule *f* didn't exist, then the parser will return an error like this one : *Unknown rule ***f*** (0:4)*.
