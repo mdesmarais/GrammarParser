@@ -10,7 +10,6 @@ list(APPEND test_files
         test_formal_grammar.cpp
         test_parser.cpp
         test_range.cpp
-        collections/test_set.cpp
         test_string_utils.cpp
 )
 

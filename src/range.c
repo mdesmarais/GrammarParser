@@ -137,3 +137,35 @@ void prs_freeRangeArray(prs_RangeArray *rangeArray) {
         rangeArray->size = 0;
     }
 }
+
+bool prs_rangeEquals(prs_Range *r1, prs_Range *r2) {
+    assert(r1);
+    assert(r2);
+
+    if (r1 == r2) {
+        return true;
+    }
+
+    return r1->uppercaseLetter == r2->uppercaseLetter && r1->start == r2->start && r1->end == r2->end;
+}
+
+bool prs_rangeArrayEquals(prs_RangeArray *ra1, prs_RangeArray *ra2) {
+    assert(ra1);
+    assert(ra2);
+
+    if (ra1 == ra2) {
+        return true;
+    }
+
+    if (ra1->size != ra2->size) {
+        return false;
+    }
+
+    for (size_t i = 0;i < ra1->size;++i) {
+        if (!prs_rangeEquals(ra1->ranges + i, ra2->ranges + i)) {
+            return false;
+        }
+    }
+
+    return true;
+}

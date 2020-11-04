@@ -3,7 +3,6 @@
 #include "collections/hash_table.h"
 #include "collections/linked_list.h"
 #include "formal_grammar.h"
-#include "hash.h"
 #include "log.h"
 #include "string_utils.h"
 
@@ -212,6 +211,14 @@ bool prs_computeItemsPosition(const char *source, ll_Iterator *it) {
     }
 
     return true;
+}
+
+bool prs_stringItemEquals(prs_StringItem *si1, prs_StringItem *si2) {
+    if (si1 == si2) {
+        return true;
+    }
+
+    return si1->line == si2->line && si1->column == si2->column && strcmp(si1->item, si2->item) == 0;
 }
 
 void prs_freeStringItem(prs_StringItem *stringItem) {
@@ -432,152 +439,11 @@ int prs_splitDelimiters(ll_Iterator *it, const char *delimiters) {
     return extractedItems;
 }
 
-void poulait(set_HashSet *firsts, fg_Token *token) {
-    assert(firsts);
-    assert(token);
-
-    switch (token->type) {
-        case FG_REF_TOKEN:
-            return poulait(firsts, token->value.refToken.token);
-        case FG_RANGE_TOKEN: {
-            prs_ParserItem *parserItem = malloc(sizeof(*parserItem));
-            parserItem->type = PRS_RANGE_ITEM;
-
-            prs_RangeArray *rangeArray = &token->value.rangeArray;
-            prs_RangeArray rangeArray1 = { .size = rangeArray->size };
-
-            rangeArray1.ranges = malloc(sizeof(*rangeArray->ranges) * rangeArray->size);
-            memcpy(rangeArray1.ranges, rangeArray->ranges, sizeof(*rangeArray->ranges) * rangeArray->size);
-            parserItem->value.rangeArray = rangeArray1;
-
-            set_insertValue(firsts, parserItem);
-            break;
-        }
-        case FG_STRING_TOKEN: {
-            prs_ParserItem *parserItem = malloc(sizeof(*parserItem));
-            parserItem->type = PRS_STRING_ITEM;
-
-            char *string = calloc(strlen(token->value.string) + 1, 1);
-            strcpy(string, token->value.string);
-            parserItem->value.string = string;
-
-            set_insertValue(firsts, parserItem);
-            break;
-        }
-    }
-}
-
 static void parserItemDestructor(prs_ParserItem *parserItem) {
     if (parserItem) {
         prs_freeParserItem(parserItem);
         free(parserItem);
     }
-}
-
-static void parserItemCopyFactory(prs_ParserItem **pCopy, const prs_ParserItem *origin) {
-    prs_ParserItem *copy = malloc(sizeof(*copy));
-    copy->type = origin->type;
-
-    switch (copy->type) {
-        case PRS_RANGE_ITEM: {
-            const prs_RangeArray *target = &origin->value.rangeArray;
-            prs_RangeArray *rangeArray = &copy->value.rangeArray;
-
-            rangeArray->size = target->size;
-            rangeArray->ranges = malloc(sizeof(*rangeArray->ranges) * rangeArray->size);
-            memcpy(rangeArray->ranges, target->ranges, sizeof(*rangeArray->ranges) * rangeArray->size);
-            break;
-        }
-        case PRS_STRING_ITEM: {
-            char *string = calloc(strlen(origin->value.string) + 1, 1);
-            strcpy(string, origin->value.string);
-            copy->value.string = string;
-            break;
-        }
-    }
-
-    *pCopy = copy;
-}
-
-set_HashSet *prs_first(ht_Table *table, ll_LinkedList *pr, fg_PRItem *prItem, bool *pIsOptional) {
-    assert(table);
-    assert(pr);
-    assert(prItem);
-
-    set_HashSet *set = ht_getValue(table, pr);
-
-    if (pIsOptional) {
-        *pIsOptional = (prItem->type == FG_TOKEN_ITEM && prItem->value.token->quantifier == PRS_STAR_QUANTIFIER) ? true : false;
-    }
-
-    if (set) {
-        return set;
-    }
-
-    set = malloc(sizeof(*set));
-    set_createSet(set, 10, (ht_HashFunction *) prs_hashParserItem, NULL, (set_CopyFactory*) parserItemCopyFactory,
-                  (set_ElementDestructor *) parserItemDestructor);
-    ht_insertElement(table, pr, set);
-
-    switch (prItem->type) {
-        case FG_RULE_ITEM: {
-            fg_Rule *rule = prItem->value.rule;
-
-            ll_Iterator it = ll_createIterator(&rule->productionRuleList);
-
-            while (ll_iteratorHasNext(&it)) {
-                ll_LinkedList *prItemList = ll_iteratorNext(&it);
-                set_HashSet *pwet = prs_prFirst(table, prItemList);
-                set_union(set, pwet);
-            }
-            break;
-        }
-        case FG_STRING_ITEM: {
-            prs_ParserItem *parserItem = malloc(sizeof(*parserItem));
-            parserItem->type = PRS_STRING_ITEM;
-
-            char *string = calloc(strlen(prItem->value.string) + 1, 1);
-            strcpy(string, prItem->value.string);
-
-            parserItem->value.string = string;
-
-            set_insertValue(set, parserItem);
-            break;
-        }
-        case FG_TOKEN_ITEM:
-            poulait(set, prItem->value.token);
-            break;
-    }
-
-    return set;
-}
-
-set_HashSet *prs_prFirst(ht_Table *table, ll_LinkedList *pr) {
-    assert(table);
-    assert(pr);
-
-    ll_Iterator it = ll_createIterator(pr);
-    set_HashSet *set = NULL;
-
-    while (ll_iteratorHasNext(&it)) {
-        fg_PRItem *prItem = ll_iteratorNext(&it);
-
-        bool isOptional;
-        set_HashSet *set2 = prs_first(table, pr, prItem, &isOptional);
-
-        if (!set) {
-            set = set2;
-        }
-        else {
-            set_union(set, set2);
-        }
-
-        if (!isOptional) {
-            break;
-        }
-    }
-
-    return set;
 }
 
 void prs_freeParserItem(prs_ParserItem *parserItem) {

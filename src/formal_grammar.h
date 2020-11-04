@@ -111,6 +111,8 @@ void fg_freeGrammar(fg_Grammar *g);
  */
 prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, struct prs_StringItem *tokenNameItem);
 
+bool fg_tokenEquals(fg_Token *t1, fg_Token *t2);
+
 /**
  * Frees allocated memory in a token.
  *
@@ -149,6 +151,8 @@ prs_ErrCode fg_extractRule(fg_Rule *rule, ll_Iterator *it, struct prs_StringItem
  */
 void fg_createRule(fg_Rule *rule);
 
+bool fg_ruleEquals(fg_Rule *r1, fg_Rule *r2);
+
 /**
  * Frees allocated memory for the given rule.
  *
@@ -175,6 +179,8 @@ void fg_freeRule(fg_Rule *rule);
  */
 prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it, struct prs_StringItem *currentStringItem, struct prs_StringItem **pLastStringItem);
 
+bool fg_productionRuleEquals(ll_LinkedList *pr1, ll_LinkedList *pr2);
+
 /**
  * Extracts a production rule item from a prs_StringItem.
  *
@@ -194,6 +200,8 @@ prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it,
  * @return PRS_OK if no error occurs, otherwise a different error code
  */
 prs_ErrCode fg_extractPRItem(fg_PRItem *prItem, struct prs_StringItem *stringItem);
+
+bool fg_PRItemEquals(fg_PRItem *prItem1, fg_PRItem *prItem2);
 
 /**
  * Frees allocated memory for the given production rule item.

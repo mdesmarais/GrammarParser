@@ -111,4 +111,7 @@ prs_ErrCode prs_extractRanges(prs_RangeArray *rangeArray, const char *input, siz
  */
 void prs_freeRangeArray(prs_RangeArray *rangeArray);
 
+bool prs_rangeEquals(prs_Range *r1, prs_Range *r2);
+bool prs_rangeArrayEquals(prs_RangeArray *ra1, prs_RangeArray *ra2);
+
 #endif // RANGE_H

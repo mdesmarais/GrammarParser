@@ -1,7 +1,7 @@
 #include "formal_grammar.h"
 
-#include "parser.h"
 #include "hash.h"
+#include "parser.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -141,6 +141,25 @@ prs_ErrCode fg_extractToken(fg_Token *token, ll_Iterator *it, prs_StringItem *to
     return PRS_OK;
 }
 
+bool fg_tokenEquals(fg_Token *t1, fg_Token *t2) {
+    if (t1 == t2) {
+        return true;
+    }
+
+    if (t1->type != t2->type || strcmp(t1->name, t2->name) != 0 || t1->quantifier != t2->quantifier) {
+        return false;
+    }
+
+    switch (t1->type) {
+        case FG_RANGE_TOKEN:
+            return prs_rangeArrayEquals(&t1->value.rangeArray, &t2->value.rangeArray);
+        case FG_REF_TOKEN:
+            return prs_stringItemEquals(t1->value.refToken.symbol, t2->value.refToken.symbol);
+        case FG_STRING_TOKEN:
+            return strcmp(t1->value.string, t2->value.string) == 0;
+    }
+}
+
 void fg_freeToken(fg_Token *token) {
     if (token) {
         free(token->name);
@@ -234,6 +253,18 @@ void fg_createRule(fg_Rule *rule) {
     ll_createLinkedList(&rule->productionRuleList, (ll_DataDestructor*) productionRuleDestructor);
 }
 
+static int productionRuleListComparator(ll_LinkedList *prList1, ll_LinkedList *prList2) {
+    return (prList1 == prList2 || ll_isEqual(prList1, prList2, (ll_DataComparator*) fg_PRItemEquals)) ? 0 : 1;
+}
+
+bool fg_ruleEquals(fg_Rule *r1, fg_Rule *r2) {
+    if (r1 == r2) {
+        return true;
+    }
+
+    return strcmp(r1->name, r2->name) == 0 && ll_isEqual(&r1->productionRuleList, &r2->productionRuleList, (ll_DataComparator*) productionRuleListComparator);
+}
+
 void fg_freeRule(fg_Rule *rule) {
     if (rule) {
         free(rule->name);
@@ -286,6 +317,14 @@ prs_ErrCode fg_extractProductionRule(ll_LinkedList *prItemList, ll_Iterator *it,
     return PRS_OK;
 }
 
+static int prItemComparator(fg_PRItem *prItem1, fg_PRItem *prItem2) {
+    return (prItem1 == prItem2 || fg_PRItemEquals(prItem1, prItem2)) ? 0 : 1;
+}
+
+bool fg_productionRuleEquals(ll_LinkedList *pr1, ll_LinkedList *pr2) {
+    return pr1 == pr2 || ll_isEqual(pr1, pr2, (ll_DataComparator*) prItemComparator);
+}
+
 prs_ErrCode fg_extractPRItem(fg_PRItem *prItem, prs_StringItem *stringItem) {
     assert(prItem);
     assert(stringItem);
@@ -316,6 +355,28 @@ prs_ErrCode fg_extractPRItem(fg_PRItem *prItem, prs_StringItem *stringItem) {
     }
 
     return PRS_OK;
+}
+
+bool fg_PRItemEquals(fg_PRItem *prItem1, fg_PRItem *prItem2) {
+    assert(prItem1);
+    assert(prItem2);
+
+    if (prItem1 == prItem2) {
+        return true;
+    }
+
+    if (prItem1->type != prItem2->type) {
+        return false;
+    }
+
+    switch (prItem1->type) {
+        case FG_RULE_ITEM:
+            return fg_ruleEquals(prItem1->value.rule, prItem2->value.rule);
+        case FG_STRING_ITEM:
+            return strcmp(prItem1->value.string, prItem2->value.string) == 0;
+        case FG_TOKEN_ITEM:
+            return fg_tokenEquals(prItem1->value.token, prItem2->value.token);
+    }
 }
 
 void fg_freePRItem(fg_PRItem *prItem) {

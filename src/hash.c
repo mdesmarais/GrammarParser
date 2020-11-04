@@ -1,71 +1,10 @@
 #include "hash.h"
 
-#include "formal_grammar.h"
-#include "parser.h"
-
 #include <assert.h>
 #include <string.h>
 
-uint32_t hashProductionRule(ll_LinkedList *pr) {
-    ll_Iterator it = ll_createIterator(pr);
-    uint32_t hash = murmurhash3_32(&pr->size, sizeof(pr->size));
-
-    while (ll_iteratorHasNext(&it)) {
-        fg_PRItem *prItem = ll_iteratorNext(&it);
-
-        hash = 3 * hash + hashPRItem(prItem);
-    }
-
-    return hash;
-}
-
-uint32_t hashPRItem(const fg_PRItem *prItem) {
-    assert(prItem);
-
-    uint32_t h = murmurhash3_32(&prItem->type, sizeof(prItem->type));
-
-    switch (prItem->type) {
-        case FG_STRING_ITEM:
-            return 3 * h + hashString(prItem->value.string);
-        case FG_RULE_ITEM:
-        case FG_TOKEN_ITEM:
-            return 3 * h + hashStringItem(prItem->symbol);
-    }
-}
-
-uint32_t prs_hashParserItem(const prs_ParserItem *parserItem) {
-    assert(parserItem);
-
-    uint32_t h = murmurhash3_32(&parserItem->type, sizeof(parserItem->type));
-
-    switch (parserItem->type) {
-        case PRS_RANGE_ITEM: {
-            const prs_RangeArray *rangeArray = &parserItem->value.rangeArray;
-            h = 3 * rangeArray->size;
-
-            for (size_t i = 0;i < rangeArray->size;++i) {
-                prs_Range *range = rangeArray->ranges + i;
-
-                uint32_t h2 = murmurhash3_32(&range->start, sizeof(range->start));
-                h2 = 3 * h2 + murmurhash3_32(&range->end, sizeof(range->end));
-                h2 = 3 * h2 + murmurhash3_32(&range->uppercaseLetter, sizeof(&range->uppercaseLetter));
-
-                h = 3 * h + h2;
-            }
-        }
-        case PRS_STRING_ITEM:
-            return 3 * h + hashString(parserItem->value.string);
-    }
-}
-
 uint32_t hashString(const char *string) {
     return murmurhash3_32(string, strlen(string));
-}
-
-uint32_t hashStringItem(const prs_StringItem *stringItem) {
-    uint32_t h = murmurhash3_32(&stringItem->column, sizeof(stringItem->column));
-    h = 3 * h + murmurhash3_32(&stringItem->line, sizeof(stringItem->line));
-    return 3 * h + hashString(stringItem->item);
 }
 
 static uint32_t rot132(uint32_t x, int8_t r) {

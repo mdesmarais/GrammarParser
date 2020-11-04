@@ -15,7 +15,6 @@ endif()
 list(APPEND source_files
         collections/hash_table.c
         collections/linked_list.c
-        collections/set.c
         formal_grammar.c
         hash.c
         log.c

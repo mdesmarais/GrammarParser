@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "collections/set.h"
 #include "parser_errors.h"
 #include "range.h"
 
@@ -68,6 +67,8 @@ int prs_extractGrammarItems(const char *source, size_t length, struct ll_LinkedL
  * @return true if all items have been found in the string, otherwise false
  */
 bool prs_computeItemsPosition(const char *source, struct ll_Iterator *it);
+
+bool prs_stringItemEquals(prs_StringItem *si1, prs_StringItem *si2);
 
 /**
  * Frees allocated memory for the given string item.
@@ -146,38 +147,6 @@ ssize_t prs_readGrammar(FILE *stream, char **pBuffer);
  * @return number of added elements into the list
  */
 int prs_splitDelimiters(struct ll_Iterator *it, const char *delimiters);
-
-/**
- * Computes a set of potential first terminals for the given production rule item.
- *
- * We use dynamic programming to improve computation speed : it is usefull when there are
- * many references to other rules / tokens. The table parameter will be used to store intermediate
- * computations.
- * An entry in the table is represented by a pair (production rule / set of prs_ParserItem elements).
- *
- * A production rule can be optional if it is quantified by a star (ex: rule1 -> rule2*). In this case,
- * we should call this function with the following production rule item. This is the role of {@link prs_prFirst}.
- * An optional bool pointer can be passed to get this information.
- *
- * @param table a pointer to a hash table
- * @param pr a pointer to a production rule (list of fg_PrItem)
- * @param prItem a pointer to the first prItem of the production rule
- * @param pIsOptional pointer to a boolean that will be set to true if the prItem is optional
- * @return a pointer to a set of prs_ParserItem elements
- */
-set_HashSet *prs_first(ht_Table *table, struct ll_LinkedList *pr, struct fg_PRItem *prItem, bool *pIsOptional);
-
-/**
- * Computes a set of potential firsts terminals for the given production rule.
- *
- * This function handles the case of optional production rule items.
- *
- * @see prs_first for more explaination
- * @param table a pointer to a hash table of (ll_LinkedList / set of prs_ParserItem elements)
- * @param pr a pointer to a production rule
- * @return a pointer to a set of prs_ParserItem elements
- */
-set_HashSet *prs_prFirst(ht_Table *table, struct ll_LinkedList *pr);
 
 /**
  * Frees allocated memory for the given parser item.

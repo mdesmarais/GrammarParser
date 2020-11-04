@@ -5,14 +5,29 @@
 #include "formal_grammar.h"
 #include "parser_errors.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-int main() {
+int main(int argc, char **argv) {
     char *grammarBuffer = NULL;
     log_info("Loading grammar");
-    ssize_t grammarSize = prs_readGrammar(stdin, &grammarBuffer);
+    ssize_t grammarSize;
+
+    if (argc > 1) {
+        FILE *f;
+        if ((f = fopen(argv[1], "r")) == NULL) {
+            log_error("Unable to open file : %s", strerror(errno));
+            return EXIT_FAILURE;
+        }
+
+        grammarSize = prs_readGrammar(f, &grammarBuffer);
+        fclose(f);
+    }
+    else {
+        grammarSize = prs_readGrammar(stdin, &grammarBuffer);
+    }
 
     if (grammarSize == -1) {
         perror("");
